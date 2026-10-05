@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
 import { ProjectDetail } from './Gallery';
+import Helix from './Helix';
 import { PROFILE, TIMELINE, EXPERIENCE, SKILLS, PROJECTS } from './data';
 import { useLang, loc, Rich } from './lang';
 
@@ -54,12 +55,10 @@ function About() {
   );
 }
 
-// Pinned: the section is FEATURED.length screens tall, the stage sticks while each screen swaps the case
-function Work({ onOpen }) {
-  const { lang, t } = useLang();
+// Pinned slides: one 100dvh snap step per item; whichever step crosses the centre line is active
+function useSteps() {
   const [active, setActive] = useState(0);
   const steps = useRef([]);
-
   useEffect(() => {
     const io = new IntersectionObserver((entries) => {
       for (const e of entries) if (e.isIntersecting) setActive(Number(e.target.dataset.step));
@@ -67,6 +66,16 @@ function Work({ onOpen }) {
     steps.current.forEach((el) => io.observe(el));
     return () => io.disconnect();
   }, []);
+  const stepRefs = (n) => Array.from({ length: n }, (_, i) => (
+    <div key={i} className="work-step" data-step={i} ref={(el) => { steps.current[i] = el; }} />
+  ));
+  return [active, stepRefs];
+}
+
+// Pinned: the section is FEATURED.length screens tall, the stage sticks while each screen swaps the case
+function Work({ onOpen }) {
+  const { lang, t } = useLang();
+  const [active, stepRefs] = useSteps();
 
   return (
     <section id="work" data-slide className="slide work" style={{ '--steps': FEATURED.length }}>
@@ -92,9 +101,7 @@ function Work({ onOpen }) {
           {FEATURED.map((_, i) => <span key={i} className={i === active ? 'on' : undefined} />)}
         </div>
       </div>
-      {FEATURED.map((_, i) => (
-        <div key={i} className="work-step" data-step={i} ref={(el) => { steps.current[i] = el; }} />
-      ))}
+      {stepRefs(FEATURED.length)}
     </section>
   );
 }
@@ -112,7 +119,7 @@ function Count({ to }) {
       const start = performance.now();
       const step = (t) => {
         const k = Math.min(1, (t - start) / 1400);
-        setN(Math.round(to * (1 - (1 - k) ** 3)));
+        setN(to * (1 - (1 - k) ** 3));
         if (k < 1) raf = requestAnimationFrame(step);
       };
       raf = requestAnimationFrame(step);
@@ -120,35 +127,52 @@ function Count({ to }) {
     io.observe(el.current);
     return () => { io.disconnect(); cancelAnimationFrame(raf); };
   }, [to]);
-  return <span ref={el}>{n}</span>;
+  const decimals = (String(to).split('.')[1] || '').length;
+  return <span ref={el}>{n.toFixed(decimals)}</span>;
 }
 
+// Evolution: milestones climb a 3D helix, oldest at the bottom; the rail fills upward
 function Experience() {
   const { lang, t } = useLang();
+  const [active, stepRefs] = useSteps();
+  const section = useRef(null);
+  const items = EXPERIENCE.map((x) => loc(x, lang));
+  const n = items.length;
+
   return (
-    <section id="experience" data-slide className="slide exp">
-      <div className="slide-inner">
-        <Label n="04">{t.experience}</Label>
-        <ol className="exp-list">
-          {EXPERIENCE.map((x) => loc(x, lang)).map((x, i) => (
-            <li key={x.company} className="rv" style={{ '--i': i + 1 }}>
-              <div className="exp-head">
-                <b>{x.company}</b>
-                <span>{x.period}</span>
-              </div>
-              <p className="exp-role">{x.role}</p>
-              <p className="exp-line">{x.line}</p>
-              {x.metrics.length > 0 && (
-                <div className="exp-metrics">
-                  {x.metrics.map(([v, suf, label]) => (
-                    <div key={v}><strong><Count to={v} />{suf}</strong><small>{label}</small></div>
-                  ))}
-                </div>
-              )}
+    <section id="experience" data-slide className="slide exp" ref={section} style={{ '--steps': n }}>
+      <div className="exp-stage">
+        <Helix count={n} active={active} track={section} />
+        <div className="exp-content">
+          <Label n="04">{t.experience}</Label>
+          <div className="exp-ms">
+            {items.map((x, i) => (
+              <article key={x.company} className={i === active ? 'ms on' : 'ms'} aria-hidden={i !== active}>
+                <p className="ms-index">{String(i + 1).padStart(2, '0')} / {String(n).padStart(2, '0')} · {x.period}</p>
+                <h3>{x.company}</h3>
+                <p className="ms-role">{x.role}</p>
+                <p className="ms-line">{x.line}</p>
+                {/* Mounted only while active so the counters replay on every visit */}
+                {i === active && x.metrics.length > 0 && (
+                  <div className="exp-metrics">
+                    {x.metrics.map(([v, suf, label]) => (
+                      <div key={label}><strong><Count to={v} />{suf}</strong><small>{label}</small></div>
+                    ))}
+                  </div>
+                )}
+              </article>
+            ))}
+          </div>
+        </div>
+        <ol className="exp-rail" style={{ '--p': active / Math.max(1, n - 1) }} aria-hidden="true">
+          {items.map((x, i) => (
+            <li key={x.company} className={i <= active ? 'on' : undefined}>
+              <span>{x.company}</span>
             </li>
           ))}
         </ol>
       </div>
+      {stepRefs(n)}
     </section>
   );
 }

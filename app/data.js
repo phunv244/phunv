@@ -19,17 +19,24 @@ export const TIMELINE = [
   { label: 'Study', title: 'B.Sc. Information Technology', place: 'UTT · GPA 3.6 / 4.0', period: '2022 —', vi: { label: 'Học vấn', title: 'Cử nhân Công nghệ Thông tin' } },
 ];
 
-// metrics: [value, suffix, label]; counted up when the slide enters
+// Oldest first: the Experience helix climbs from the bottom milestone to the top one.
+// metrics: [value, suffix, label]; counted up when the milestone comes into view
 export const EXPERIENCE = [
   {
-    company: 'Magenest', role: 'Backend Developer', period: '11/2025 — Now',
-    line: 'Magento 2 commerce, headless WordPress and Go services for clients and in-house products.',
-    metrics: [[7, '', 'projects'], [3, '', 'platforms']],
+    company: 'UTT', role: 'B.Sc. Information Technology', period: '2022 —',
+    line: 'University of Transport Technology — GPA 3.6 / 4.0 with excellent merit scholarships.',
+    metrics: [[3.6, '', 'GPA / 4.0'], [3, '', 'merit scholarships']],
     vi: {
-      period: '11/2025 — nay',
-      line: 'Thương mại điện tử Magento 2, WordPress headless và dịch vụ Go cho khách hàng và sản phẩm nội bộ.',
-      metrics: [[7, '', 'dự án'], [3, '', 'nền tảng']],
+      role: 'Cử nhân Công nghệ Thông tin',
+      line: 'Đại học Công nghệ Giao thông Vận tải — GPA 3.6 / 4.0, học bổng khuyến khích loại Xuất sắc.',
+      metrics: [[3.6, '', 'GPA / 4.0'], [3, '', 'kỳ học bổng']],
     },
+  },
+  {
+    company: 'CoreSys', role: 'Backend Developer — Laravel', period: '01/2025',
+    line: 'Corporate web portal, Cloudinary media pipeline and admin dashboards.',
+    metrics: [],
+    vi: { line: 'Website doanh nghiệp, xử lý media qua Cloudinary và dashboard quản trị.' },
   },
   {
     company: 'HQ Group', role: 'Backend Developer — Laravel', period: '02/2025 — 10/2025',
@@ -41,10 +48,14 @@ export const EXPERIENCE = [
     },
   },
   {
-    company: 'CoreSys', role: 'Backend Developer — Laravel', period: '01/2025',
-    line: 'Corporate web portal, Cloudinary media pipeline and admin dashboards.',
-    metrics: [],
-    vi: { line: 'Website doanh nghiệp, xử lý media qua Cloudinary và dashboard quản trị.' },
+    company: 'Magenest', role: 'Backend Developer', period: '11/2025 — Now',
+    line: 'Magento 2 commerce, headless WordPress and Go services for clients and in-house products.',
+    metrics: [[7, '', 'projects'], [3, '', 'platforms']],
+    vi: {
+      period: '11/2025 — nay',
+      line: 'Thương mại điện tử Magento 2, WordPress headless và dịch vụ Go cho khách hàng và sản phẩm nội bộ.',
+      metrics: [[7, '', 'dự án'], [3, '', 'nền tảng']],
+    },
   },
 ];
 

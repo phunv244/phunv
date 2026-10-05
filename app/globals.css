@@ -304,21 +304,65 @@
   .work-dots span { width: 18px; height: 2px; background: rgba(242,238,233,.2); transition: width .5s, background .5s; }
   .work-dots span.on { width: 48px; background: var(--fg); }
 
-  /* ---------- 04 Experience ---------- */
-  .exp-list { list-style: none; }
-  .exp-list > li {
-    display: grid; grid-template-columns: 4fr 5fr 4fr; grid-template-areas: "head line metrics" "role line metrics";
-    column-gap: 4vw; row-gap: 4px; padding: 28px 0; border-top: 1px solid rgba(242,238,233,.14);
+  /* ---------- 04 Experience: pinned like Work, a 3D helix (Helix.jsx) behind the milestone text ---------- */
+  .exp { scroll-snap-align: none; }
+  .exp-stage { position: sticky; top: 0; height: 100dvh; overflow: hidden; }
+  .exp-stage + .work-step { margin-top: -100dvh; }
+  .helix { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  .exp-content {
+    position: relative; z-index: 1; height: 100%; width: min(1200px, 100%); margin: 0 auto; pointer-events: none;
+    display: grid; grid-template-rows: auto 1fr; gap: 32px;
+    padding: calc(120px + env(safe-area-inset-top)) 6vw calc(56px + env(safe-area-inset-bottom));
   }
-  .exp-list > li:last-child { border-bottom: 1px solid rgba(242,238,233,.14); }
-  .exp-head { grid-area: head; display: flex; flex-direction: column; gap: 6px; }
-  .exp-head b { font: 400 clamp(28px, 3vw, 40px)/1 var(--serif); }
-  .exp-head span { font: 11px monospace; letter-spacing: .12em; color: var(--muted); }
-  .exp-role { grid-area: role; font-size: 13px; color: var(--muted); }
-  .exp-line { grid-area: line; font-size: 16px; line-height: 1.5; color: #c9c2ba; }
-  .exp-metrics { grid-area: metrics; display: flex; gap: 32px; }
+  .exp-ms { position: relative; }
+  .ms {
+    position: absolute; left: 0; top: 50%; translate: 0 -50%; width: min(520px, 100%);
+    opacity: 0; visibility: hidden; transition: opacity .5s ease, visibility .5s;
+  }
+  .ms.on { opacity: 1; visibility: visible; }
+  .ms > * { opacity: 0; }
+  .ms.on > * { animation: in .8s cubic-bezier(.2,.7,.2,1) both; }
+  .ms.on > :nth-child(2) { animation-delay: .08s; }
+  .ms.on > :nth-child(3) { animation-delay: .16s; }
+  .ms.on > :nth-child(4) { animation-delay: .24s; }
+  .ms.on > :nth-child(5) { animation-delay: .32s; }
+  .ms-index { font: 11px monospace; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); margin-bottom: 16px; }
+  .ms h3 { font: 400 clamp(48px, 6.4vw, 104px)/.95 var(--serif); letter-spacing: -.03em; margin-bottom: 14px; }
+  .ms-role { font-size: 13px; letter-spacing: .04em; color: #d9b99b; margin-bottom: 14px; }
+  .ms-line { font-size: 16px; line-height: 1.55; color: #c9c2ba; margin-bottom: 28px; max-width: 30em; }
+  .exp-metrics { display: flex; gap: 40px; }
   .exp-metrics strong { display: block; font: 400 clamp(40px, 4.4vw, 64px)/1 var(--serif); font-variant-numeric: tabular-nums; }
   .exp-metrics small { display: block; margin-top: 6px; font: 11px/1.4 monospace; color: var(--muted); max-width: 12em; }
+
+  /* Evolution rail: oldest at the bottom, the line fills upward with the active milestone */
+  .exp-rail {
+    position: absolute; z-index: 1; right: 6vw; top: 50%; translate: 0 -50%; height: min(52dvh, 420px);
+    list-style: none; display: flex; flex-direction: column-reverse; justify-content: space-between;
+    padding-right: 18px; border-right: 1px solid rgba(242,238,233,.14);
+  }
+  .exp-rail::after {
+    content: ""; position: absolute; right: -1px; bottom: 0; width: 1px; height: 100%; background: #d9b99b;
+    transform: scaleY(var(--p)); transform-origin: bottom; transition: transform .8s cubic-bezier(.65,0,.35,1);
+  }
+  .exp-rail li { position: relative; font: 11px monospace; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); text-align: right; transition: color .4s; }
+  .exp-rail li::after {
+    content: ""; position: absolute; right: -22px; top: 50%; width: 7px; height: 7px; margin-top: -3.5px; border-radius: 50%;
+    background: #1a1512; border: 1px solid #5a524b; transition: background .4s, border-color .4s;
+  }
+  .exp-rail li.on { color: var(--fg); }
+  .exp-rail li.on::after { background: #d9b99b; border-color: #d9b99b; }
+
+  /* Portrait (phones, tablets upright): helix fills the top, milestone text sits on a fade at the bottom */
+  @media (orientation: portrait) and (max-width: 1024px), (max-width: 800px) {
+    .ms { top: auto; bottom: 0; translate: none; }
+    .exp-stage::after {
+      content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 62%; pointer-events: none;
+      background: linear-gradient(transparent, #1a1512 45%);
+    }
+    .exp-content { z-index: 2; }
+    .ms-line { margin-bottom: 20px; }
+    .exp-rail { right: max(16px, 6vw); top: calc(96px + env(safe-area-inset-top)); translate: none; height: 30dvh; }
+  }
 
   /* ---------- 05 Capabilities ---------- */
   .caps-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 32px; }
@@ -388,8 +432,6 @@
     .flow li + li { margin-top: 0; }
     .flow li + li::before { display: none; }
     .flow li:not(:last-child)::after { content: "→"; margin-left: 10px; color: var(--muted); }
-    .exp-list > li { grid-template-columns: 1fr 1fr; grid-template-areas: "head metrics" "role metrics" "line line"; row-gap: 8px; }
-    .exp-line { margin-top: 8px; }
     .caps-grid { grid-template-columns: repeat(2, 1fr); }
   }
 
@@ -460,10 +502,12 @@
     .about-inner { row-gap: 32px; align-content: start; padding: calc(96px + env(safe-area-inset-top)) 16px calc(32px + env(safe-area-inset-bottom)); }
     .about-rows > div { grid-template-columns: minmax(56px, auto) 1fr; }
     .about-period { grid-column: 2; margin-top: -10px; }
-    .about-rows dd span, .exp-role, .caps-grid li, .contact-meta { font-size: 16px; }
+    .about-rows dd span, .ms-role, .caps-grid li, .contact-meta { font-size: 16px; }
+    .exp-content { padding: calc(96px + env(safe-area-inset-top)) 16px calc(40px + env(safe-area-inset-bottom)); }
+    .ms h3 { font-size: clamp(44px, 13vw, 64px); }
+
     .case-text ul { display: none; }
     .case h3 { font-size: clamp(36px, 10vw, 48px); }
-    .exp-list > li { grid-template-columns: 1fr; grid-template-areas: "head" "role" "line" "metrics"; }
     .caps-grid { gap: 24px 16px; }
     .caps-grid h3 { font-size: 22px; }
     .lab-list button { grid-template-columns: 32px 1fr 24px; padding: 16px 0; min-height: 44px; }
