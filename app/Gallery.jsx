@@ -2,27 +2,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 
-// [title, year]; images in public/works/<slug>-{400,640,1200}.webp
-const ITEMS = [
-  ['Lunar Echo', 2024],
-  ['Velvet Flux', 2023],
-  ['Solar Veil', 2024],
-  ['Crystal Dawn', 2023],
-  ['Neon Mirage', 2024],
-  ['Eternal Glow', 2024],
-  ['Silent Orbit', 2025],
-  ['Prism Haze', 2023],
-  ['Echo Bloom', 2024],
-  ['Radiant Void', 2025],
-  ['Shadow Tide', 2024],
-  ['Aurora Fold', 2024],
-  ['Glass Reverie', 2024],
-  ['Celestial Drift', 2025],
-  ['Obsidian Flow', 2023],
-].map(([title, year]) => {
-  const slug = title.toLowerCase().replace(/\s+/g, '-');
-  return { title, year, src: (w) => `/works/${slug}-${w}.webp` };
-});
+import { PROJECTS as ITEMS } from './data';
 
 const ARC = (48 * Math.PI / 180) * 0.9; // max yaw at the viewport edge
 const ARC_FADE = 0.9 * 0.4;
@@ -150,7 +130,6 @@ export default function Gallery({ revealed = false, driftSpeed = 0 }) {
       panRef.current = p;
     }
     isInertiaActive.current = false;
-    e.currentTarget.setPointerCapture(e.pointerId);
     isPointerDownRef.current = true;
     hasDraggedRef.current = false;
     lastPointer.current = { x: e.clientX, y: e.clientY, t: performance.now() };
@@ -176,6 +155,8 @@ export default function Gallery({ revealed = false, driftSpeed = 0 }) {
     lastPointer.current = { x: e.clientX, y: e.clientY, t: now };
 
     if (!isDraggingRef.current && Math.hypot(e.clientX - dragStartPos.current.x, e.clientY - dragStartPos.current.y) > 8) {
+      // Capture only once a drag starts: capturing on pointerdown retargets the click away from the card
+      e.currentTarget.setPointerCapture(e.pointerId);
       hasDraggedRef.current = true;
       isDraggingRef.current = true;
       setIsDragging(true);
@@ -283,10 +264,17 @@ export default function Gallery({ revealed = false, driftSpeed = 0 }) {
           onClick={(e) => e.target === e.currentTarget && !closing && closeLightbox()}
         >
           <button className="gx-close" onClick={() => !closing && closeLightbox()} aria-label="Close">×</button>
-          <figure>
-            <img src={selected.src(1200)} alt={selected.title} />
-            <figcaption>{selected.title} <span>({selected.year})</span></figcaption>
-          </figure>
+          <article className="gx-detail">
+            <img src={selected.src(1200)} alt="" />
+            <div className="gx-info">
+              <p className="gx-kind">{selected.kind} · {selected.year}</p>
+              <h2>{selected.title}</h2>
+              <p className="gx-summary">{selected.summary}</p>
+              <ul>{selected.points.map((t, i) => <li key={i} style={{ '--i': i }}>{t}</li>)}</ul>
+              <div className="gx-stack">{selected.stack.map((t) => <span key={t}>{t}</span>)}</div>
+              {selected.link && <a className="pill light" href={selected.link} target="_blank" rel="noreferrer">Visit live</a>}
+            </div>
+          </article>
         </div>,
         document.body
       )}
