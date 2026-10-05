@@ -191,10 +191,14 @@ function setup(THREE, canvas, count, activeRef, track) {
     const goal = read(), k = still ? 1 : 1 - Math.exp(-dt * 2.4);
     for (const key in cur) cur[key] += (goal[key] - cur[key]) * k;
 
-    // 1 = parked: looking at the empty space left of the column, pulled back
-    const off = smooth(Math.max(1 - cur.enter, cur.exit));
+    // 1 = parked: looking at the empty space left of the column, pulled back. The swing is squeezed into
+    // the part of the scroll where the stage covers (almost) the whole screen: it starts swinging in only
+    // once the stage is ~half way up, and has swung out before the stage's edge shows, so the column
+    // never meets the section boundary
+    const swingIn = clamp01((cur.enter - .45) / .55), swingOut = clamp01(cur.exit / .4);
+    const off = smooth(Math.max(1 - swingIn, swingOut));
     // Keep drifting up through the swing-in and swing-out so the climb never stops
-    const y = nodeY(0) + cur.climb * (nodeY(count - 1) - nodeY(0)) + (cur.exit - (1 - cur.enter)) * 1.6;
+    const y = nodeY(0) + cur.climb * (nodeY(count - 1) - nodeY(0)) + (swingOut - (1 - swingIn)) * 1.6;
 
     // Screw the helix so the bright strand at the camera's height always turns toward the viewer
     helix.rotation.y = y * TWIST - Math.PI / 2 - .3;
