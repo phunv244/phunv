@@ -119,7 +119,7 @@ export const PROJECTS = [
     stack: ['Adobe Commerce', 'PWA Studio', 'UPWARD', 'React'],
   },
   {
-    title: 'Preme', year: 2026, kind: 'Personal · Full stack', img: 'radiant-void',
+    title: 'Preme', link: 'https://kerrax.com', year: 2026, kind: 'Personal · Full stack', img: 'radiant-void',
     summary: 'Reseller shop for digital & AI accounts with multi-provider catalog and crypto wallet.',
     points: [
       'Provider catalog with pricing guard: auto-disables items when cost ≥ price.',
@@ -160,7 +160,7 @@ export const PROJECTS = [
     stack: ['Go', 'Gin', 'MySQL', 'Judge0', 'Next.js'],
   },
   {
-    title: 'OpenDox', year: 2026, kind: 'Personal · Document SaaS', img: 'solar-veil',
+    title: 'OpenDox', link: 'https://opendox.vercel.app/', year: 2026, kind: 'Personal · Document SaaS', img: 'solar-veil',
     summary: 'Document translation with OCR, plus a browser-only PDF toolkit.',
     points: [
       'FastAPI with jobs, quotas, locking and billing modules; PaddleOCR + PDF/DOCX pipeline.',
