@@ -251,7 +251,7 @@ function Archive({ onArchive }) {
 }
 
 function Contact() {
-  const { t } = useLang();
+  const { lang, t } = useLang();
   const word = t.talk;
   return (
     <section id="contact" data-slide className="slide contact">
@@ -262,6 +262,7 @@ function Contact() {
           <span className="contact-arrow" aria-hidden="true">→</span>
         </a>
         <div className="contact-meta rv" style={{ '--i': 4 }}>
+          <a className="pill light cv" href={`/cv/nguyen-van-phu-cv-${lang}.pdf`} download>{t.downloadCv}</a>
           <a href={`mailto:${PROFILE.email}`}>{PROFILE.email}</a>
           <a href={`https://zalo.me/${PROFILE.zalo}`} target="_blank" rel="noreferrer">Zalo {PROFILE.zalo.replace(/(\d{4})(\d{3})(\d{3})/, '$1 $2 $3')} ↗</a>
           <a href={PROFILE.linkedin} target="_blank" rel="noreferrer">LinkedIn ↗</a>

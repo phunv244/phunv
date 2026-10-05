@@ -86,7 +86,7 @@ export const UI = {
     archiveSub: 'Client work and side projects. Drag to look around.',
     openArchive: 'See all projects',
     contact: 'Contact', backToTop: 'Back to top ↑',
-    visitLive: 'Visit site', close: 'Close',
+    visitLive: 'Visit site', close: 'Close', downloadCv: 'Download CV (PDF)',
   },
   vi: {
     currently: 'Hiện tại', basedIn: 'Sống tại', location: 'Hà Nội, Việt Nam',
@@ -105,7 +105,7 @@ export const UI = {
     archiveSub: 'Dự án cho khách hàng và dự án cá nhân. Kéo để xem.',
     openArchive: 'Xem tất cả dự án',
     contact: 'Liên hệ', backToTop: 'Lên đầu trang ↑',
-    visitLive: 'Xem trang', close: 'Đóng',
+    visitLive: 'Xem trang', close: 'Đóng', downloadCv: 'Tải CV (PDF)',
   },
 };
 

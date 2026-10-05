@@ -419,6 +419,9 @@
   @media (hover: hover) { .contact-big:hover .contact-arrow { translate: 16px 0; } }
   .contact-meta { display: flex; flex-wrap: wrap; gap: 8px 32px; font-size: 15px; color: #c9c2ba; }
   .contact-meta a, .contact-meta span { display: inline-flex; align-items: center; min-height: 44px; }
+  .contact-meta .pill { font-size: 14px; padding-right: 20px; }
+  .pill.cv::before { content: "↓"; }
+  @media (hover: hover) { .contact-meta .pill.light:hover { background: transparent; color: var(--fg); } }
   @media (hover: hover) { .contact-meta a:hover { color: var(--fg); } }
   .contact-foot {
     display: flex; justify-content: space-between; align-items: center; gap: 16px; padding-top: 20px; border-top: 1px solid rgba(242,238,233,.12);
