@@ -18,7 +18,7 @@ export default function Helix({ count, active, track }) {
   return <canvas ref={el} className="helix" aria-hidden="true" />;
 }
 
-const RADIUS = 1.6, HEIGHT = 12, TURNS = 2.25;
+const RADIUS = 1.6, HEIGHT = 12, TURNS = 1.75; // fewer turns = gentler orbit between milestones
 const ACCENT = '#d9b99b', FG = '#f2eee9', MUTED = '#5a524b';
 
 function setup(THREE, canvas, count, activeRef, track) {
@@ -105,46 +105,65 @@ function setup(THREE, canvas, count, activeRef, track) {
   const io = new IntersectionObserver(([e]) => { visible = e.isIntersecting; });
   io.observe(canvas);
 
-  // Scroll progress through the pinned section, 0 at the first milestone, 1 at the last
-  const progress = () => {
-    const r = track.current.getBoundingClientRect();
-    const range = r.height - innerHeight;
-    return range > 0 ? Math.min(1, Math.max(0, -r.top / range)) : 0;
+  // Scroll state of the section: climb 0 → 1 while pinned (first → last milestone), plus how far the
+  // stage has scrolled in (enter 0 → 1) and back out past the last milestone (exit 0 → 1)
+  const read = () => {
+    const r = track.current.getBoundingClientRect(), vh = innerHeight;
+    const range = r.height - vh;
+    const clamp = (v) => Math.min(1, Math.max(0, v));
+    return {
+      climb: range > 0 ? clamp(-r.top / range) : 0,
+      enter: clamp(1 - r.top / vh),
+      exit: clamp((vh - r.bottom) / vh),
+    };
   };
+  const smooth = (v) => v * v * (3 - 2 * v);
 
   const target = new THREE.Vector3(), out = new THREE.Vector3(), side = new THREE.Vector3(), look = new THREE.Vector3();
   const up = new THREE.Vector3(0, 1, 0);
-  let s = progress(), raf;
+  const tint = { on: new THREE.Color(ACCENT), past: new THREE.Color(FG), next: new THREE.Color(MUTED) };
+  const cur = read();
+  let raf, last = performance.now();
 
   const tick = (now) => {
     raf = requestAnimationFrame(tick);
+    const dt = Math.min(.1, (now - last) / 1000);
+    last = now;
     if (!visible) return;
 
-    // Damped follow: snap scrolling jumps, the camera glides
-    const goal = progress();
-    s += (goal - s) * (still ? 1 : .07);
+    // Frame-rate independent easing toward the scroll state: snap jumps, the camera glides
+    const goal = read(), k = still ? 1 : 1 - Math.exp(-dt * 3);
+    for (const key in cur) cur[key] += (goal[key] - cur[key]) * k;
+    const s = cur.climb;
     const t = nodeT(0) + s * (nodeT(count - 1) - nodeT(0));
+
+    // Fly-in / fly-out: before the first milestone the camera waits far below and away, after the last
+    // it pulls far back and up, so the helix shrinks into the fog and drops out of frame (reversed on the way back)
+    const away = smooth(1 - cur.enter), gone = smooth(cur.exit);
+    const off = away + gone;
 
     // Camera sits outside the helix facing the current point. Over the climb it rises from below
     // (looking up at what's ahead) to above (looking down at the path so far) and pulls back for the
     // bigger picture, so each milestone gets its own angle
-    const a = angleAt(t) + (s - .5) * .7;
+    const a = angleAt(t) + (s - .5) * .7 + (gone - away) * 1.1;
     target.copy(at(t));
     out.set(Math.cos(a), 0, Math.sin(a));
-    const dist = (narrow ? 6.4 : 5.6) + s * 2.2;
-    camera.position.copy(target).addScaledVector(out, dist).addScaledVector(up, -1.6 + s * 3.4);
+    const dist = (narrow ? 6.4 : 5.6) + s * 2.2 + off * off * 16;
+    camera.position.copy(target).addScaledVector(out, dist).addScaledVector(up, -1.6 + s * 3.4 + (gone - away) * 9);
     // Desktop: aim left of the node so it lands right of centre, clear of the text column
     side.crossVectors(up, out).normalize();
-    look.copy(target).addScaledVector(side, narrow ? 0 : -(1.7 + s * .6)).addScaledVector(up, narrow ? -1.3 : 0);
+    look.copy(target)
+      .addScaledVector(side, narrow ? 0 : -(1.7 + s * .6))
+      .addScaledVector(up, (narrow ? -1.3 : 0) + (gone - away) * 7);
     camera.lookAt(look);
 
     const act = activeRef.current;
     nodes.forEach((n, i) => {
       const on = i === act;
-      n.core.material.color.set(on ? ACCENT : i < act ? FG : MUTED);
+      n.core.material.color.lerp(on ? tint.on : i < act ? tint.past : tint.next, k);
       const pulse = on && !still ? 1 + Math.sin(now / 420) * .08 : 1;
-      n.g.scale.setScalar((on ? 1.35 : i < act ? 1 : .8) * pulse);
-      n.halo.material.opacity += ((on ? .9 : 0) - n.halo.material.opacity) * .1;
+      n.g.scale.setScalar(n.g.scale.x + ((on ? 1.35 : i < act ? 1 : .8) * pulse - n.g.scale.x) * k);
+      n.halo.material.opacity += ((on ? .9 : 0) - n.halo.material.opacity) * k;
       n.halo.lookAt(camera.position);
     });
 
