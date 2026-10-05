@@ -3,7 +3,8 @@ import { useEffect, useRef, useState } from 'react';
 import Light from './Light';
 import Gallery from './Gallery';
 import Sections from './Sections';
-import { PROFILE } from './data';
+import { PROFILE, UI } from './data';
+import { LangContext, Rich } from './lang';
 
 // Slide ids in scroll order; index = position in the deck counter
 const SLIDES = ['top', 'about', 'work', 'experience', 'capabilities', 'lab', 'archive', 'contact'];
@@ -15,6 +16,8 @@ export default function Home() {
   const [archive, setArchive] = useState(false); // full-screen draggable gallery
   const [active, setActive] = useState(0); // index into SLIDES
   const [word, setWord] = useState(0);
+  const [lang, setLang] = useState('en');
+  const t = UI[lang];
   const video = useRef(null);
 
   // Next.js fonts are already loaded; keep the short preloader beat
@@ -75,25 +78,49 @@ export default function Home() {
     setArchive(true);
   };
 
+  // Language: saved choice, else the browser's; English is what the server renders
+  useEffect(() => {
+    let saved = null;
+    try { saved = localStorage.getItem('lang'); } catch {}
+    setLang(saved === 'vi' || saved === 'en' ? saved : navigator.language.startsWith('vi') ? 'vi' : 'en');
+  }, []);
+
+  useEffect(() => {
+    document.documentElement.lang = lang;
+  }, [lang]);
+
+  const switchLang = () => {
+    const next = lang === 'en' ? 'vi' : 'en';
+    setLang(next);
+    try { localStorage.setItem('lang', next); } catch {}
+  };
+
   const navClass = (id) => (SLIDES[active] === id ? 'active' : undefined);
 
   return (
+    <LangContext.Provider value={lang}>
     <div className={[loaded && 'loaded', shot && 'shot', archive && 'full-gallery', active > 0 && 'scrolled'].filter(Boolean).join(' ') || undefined}>
       <div className="loader"><span>NGUYEN VAN PHU</span></div>
 
       <header>
         <a href="#top" className="logo reveal" style={{ '--d': '.2s' }} onClick={() => setArchive(false)}>Phu.</a>
-        <div className="reveal" style={{ '--d': '.3s' }}><small>Currently</small>Backend @ {PROFILE.company}</div>
-        <div className="reveal" style={{ '--d': '.4s' }}><small>Based in</small>{PROFILE.location}</div>
+        <div className="reveal" style={{ '--d': '.3s' }}><small>{t.currently}</small>Backend @ {PROFILE.company}</div>
+        <div className="reveal" style={{ '--d': '.4s' }}><small>{t.basedIn}</small>{t.location}</div>
         <nav className="reveal" style={{ '--d': '.5s' }}>
-          <a href="#work" className={navClass('work')}>Work</a>
-          <a href="#about" className={navClass('about')}>About</a>
-          <a href="#experience" className={navClass('experience')}>Experience</a>
-          <a href="#contact" className={navClass('contact')}>Contact</a>
+          <a href="#work" className={navClass('work')}>{t.nav.work}</a>
+          <a href="#about" className={navClass('about')}>{t.nav.about}</a>
+          <a href="#experience" className={navClass('experience')}>{t.nav.experience}</a>
+          <a href="#contact" className={navClass('contact')}>{t.nav.contact}</a>
         </nav>
-        {archive
-          ? <button className="pill reveal" style={{ '--d': '.6s' }} onClick={() => setArchive(false)}>Close archive</button>
-          : <a href="#contact" className="pill reveal" style={{ '--d': '.6s' }}>Let’s talk</a>}
+        <div className="header-actions reveal" style={{ '--d': '.6s' }}>
+          <button className="lang-toggle" onClick={switchLang} aria-label={lang === 'en' ? 'Tiếng Việt' : 'English'}>
+            <span className={lang === 'en' ? 'on' : undefined}>EN</span>
+            <span className={lang === 'vi' ? 'on' : undefined}>VI</span>
+          </button>
+          {archive
+            ? <button className="pill" onClick={() => setArchive(false)}>{t.closeArchive}</button>
+            : <a href="#contact" className="pill">{t.talk}</a>}
+        </div>
       </header>
 
       <div className="deck-count" aria-hidden="true">
@@ -117,26 +144,30 @@ export default function Home() {
         <div className="vignette" />
         <div className="flash" />
 
+        {/* Desktop: display: contents, children place themselves; mobile: one bottom-anchored column */}
+        <div className="hero-text">
         <div className="copy">
           <p className="eyebrow reveal" style={{ '--d': '.6s' }}>
             01 — <span className="ticker"><span key={word}>{PROFILE.stack[word]}</span></span>
           </p>
           <h1>
-            <span className="line"><span style={{ '--d': '.7s' }}>Backend</span></span>
-            <span className="line"><span style={{ '--d': '.85s' }}>Developer</span></span>
+            <span className="line"><span style={{ '--d': '.7s' }}>{t.title[0]}</span></span>
+            <span className="line"><span style={{ '--d': '.85s' }}>{t.title[1]}</span></span>
           </h1>
           <a href="#work" className="pill light reveal" style={{ '--d': '1s' }}>
-            Explore Works
+            {t.explore}
           </a>
         </div>
 
         <div className="quote reveal" style={{ '--d': '1.15s' }}>
-          “Backend developer shipping <b>Magento 2, headless WordPress and Go</b> systems for real stores — clean modules, measured performance.”
+          “<Rich parts={t.quote} as="b" />”
           <div className="sign">{PROFILE.name}</div>
+        </div>
         </div>
       </section>
 
       <Sections onArchive={openArchive} />
     </div>
+    </LangContext.Provider>
   );
 }

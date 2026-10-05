@@ -27,6 +27,22 @@
     padding: 22px 6vw; font-size: 12px;
   }
   .logo { font: 30px/1 var(--serif); letter-spacing: -.02em; }
+
+  /* Vietnamese: swap the display serif, narrowed to sit close to Instrument Serif's proportions.
+     !important because the `font` shorthand used everywhere resets font-variation-settings */
+  :root[lang="vi"] { --serif: var(--serif-vi); }
+  :root[lang="vi"] body * { font-variation-settings: 'wdth' 72 !important; }
+  :root[lang="vi"] .sign { font-variation-settings: normal !important; }
+
+  .header-actions { display: flex; align-items: center; gap: 12px; }
+  .lang-toggle {
+    display: inline-flex; align-items: center; gap: 2px; min-height: 44px; padding: 0 4px;
+    background: none; border: 0; color: var(--muted); font: 500 11px/1 var(--sans); letter-spacing: .12em; cursor: pointer;
+  }
+  .lang-toggle span { padding: 6px 6px; border-radius: 99px; transition: color .3s, background .3s; }
+  .lang-toggle span.on { color: #000; background: var(--fg); }
+  @media (hover: hover) { .lang-toggle:hover span:not(.on) { color: var(--fg); } }
+  .lang-toggle:focus-visible { outline: 1px solid var(--fg); outline-offset: 2px; border-radius: 99px; }
   header small { display: block; color: var(--muted); }
   header nav a { display: block; line-height: 1.5; }
   header nav a.active { color: var(--fg); font-weight: 600; }
@@ -147,6 +163,7 @@
   .vignette { position: absolute; inset: 0; z-index: 6; pointer-events: none;
     background: radial-gradient(ellipse at 50% 40%, transparent 40%, rgba(0,0,0,.5)); }
 
+  .hero-text { display: contents; }
   .copy { position: absolute; z-index: 10; left: 32%; top: 58dvh; pointer-events: none; transition: opacity 0.5s ease, transform 0.5s ease; }
   .copy > * { pointer-events: auto; }
   .quote { position: absolute; z-index: 10; left: 52%; top: calc(58dvh + 12vw); max-width: 230px; font: italic 14px/1.35 var(--serif); color: var(--muted); pointer-events: none; transition: opacity 0.5s ease, transform 0.5s ease; }
@@ -226,7 +243,7 @@
   .in .about-statement .line > span { animation: rise 1s cubic-bezier(.2,.7,.2,1) both; animation-delay: calc(.15s + var(--i) * 90ms); }
 
   .about-rows { align-self: end; grid-row: 2 / 4; grid-column: 2; }
-  .about-rows > div { position: relative; display: grid; grid-template-columns: 72px 1fr auto; gap: 16px; align-items: baseline; padding: 18px 0; opacity: 0; }
+  .about-rows > div { position: relative; display: grid; grid-template-columns: minmax(72px, auto) 1fr auto; gap: 16px; align-items: baseline; padding: 18px 0; opacity: 0; }
   /* Hairline draws in left to right before each row fades up */
   .about-rows > div::before {
     content: ""; position: absolute; left: 0; right: 0; top: 0; height: 1px; background: rgba(242,238,233,.18);
@@ -421,9 +438,18 @@
     header { grid-template-columns: auto 1fr auto; align-items: center; }
     header > div:nth-child(2), header > div:nth-child(3), header nav a:not(:first-child) { display: none; }
     header nav a { display: inline-flex; align-items: center; min-height: 44px; padding: 0 8px; font-size: 14px; }
+    header { gap: 8px; }
+    header nav a, header .pill { white-space: nowrap; }
+    .header-actions { gap: 4px; }
+    header .pill { padding: 6px 14px; }
+    header .pill::before { display: none; }
     .pill { min-height: 44px; }
-    .copy { left: 16px; top: 60dvh; }
-    .quote { left: 16px; top: auto; bottom: 24px; }
+    .hero-text {
+      position: absolute; z-index: 10; left: 16px; right: 16px; bottom: calc(24px + env(safe-area-inset-bottom));
+      display: flex; flex-direction: column; gap: 20px; pointer-events: none;
+    }
+    .copy, .quote { position: static; }
+    .copy h1 { margin-bottom: 18px; }
     .gx-card { padding: 10px; }
     .gx-img { margin-bottom: 12px; }
     .gx-lightbox { padding: 72px 16px 32px; place-items: start center; }
@@ -432,7 +458,7 @@
     .gx-info li, .case-text li { font-size: 16px; }
     .slide-inner, .work-stage { padding: calc(96px + env(safe-area-inset-top)) 16px calc(32px + env(safe-area-inset-bottom)); gap: 28px; }
     .about-inner { row-gap: 32px; align-content: start; padding: calc(96px + env(safe-area-inset-top)) 16px calc(32px + env(safe-area-inset-bottom)); }
-    .about-rows > div { grid-template-columns: 56px 1fr; }
+    .about-rows > div { grid-template-columns: minmax(56px, auto) 1fr; }
     .about-period { grid-column: 2; margin-top: -10px; }
     .about-rows dd span, .exp-role, .caps-grid li, .contact-meta { font-size: 16px; }
     .case-text ul { display: none; }

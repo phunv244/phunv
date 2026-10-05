@@ -3,6 +3,7 @@ import { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 
 import { PROJECTS as ITEMS } from './data';
+import { useLang, loc } from './lang';
 
 const ARC = (48 * Math.PI / 180) * 0.9; // max yaw at the viewport edge
 const ARC_FADE = 0.9 * 0.4;
@@ -248,7 +249,9 @@ export default function Gallery({ revealed = false, driftSpeed = 0 }) {
 }
 
 // Project detail dialog, shared by the gallery and the Lab list
-export function ProjectDetail({ item, onClose }) {
+export function ProjectDetail({ item: raw, onClose }) {
+  const { lang, t } = useLang();
+  const item = loc(raw, lang);
   const [closing, setClosing] = useState(false);
   const close = () => {
     if (closing) return;
@@ -270,7 +273,7 @@ export function ProjectDetail({ item, onClose }) {
       aria-label={item.title}
       onClick={(e) => e.target === e.currentTarget && close()}
     >
-      <button className="gx-close" onClick={close} aria-label="Close" autoFocus>×</button>
+      <button className="gx-close" onClick={close} aria-label={t.close} autoFocus>×</button>
       <article className="gx-detail">
         <img src={item.src(1200)} alt="" />
         <div className="gx-info">
@@ -279,7 +282,7 @@ export function ProjectDetail({ item, onClose }) {
           <p className="gx-summary">{item.summary}</p>
           <ul>{item.points.map((t, i) => <li key={i} style={{ '--i': i }}>{t}</li>)}</ul>
           <div className="gx-stack">{item.stack.map((t) => <span key={t}>{t}</span>)}</div>
-          {item.link && <a className="pill light" href={item.link} target="_blank" rel="noreferrer">Visit live</a>}
+          {item.link && <a className="pill light" href={item.link} target="_blank" rel="noreferrer">{t.visitLive}</a>}
         </div>
       </article>
     </div>,

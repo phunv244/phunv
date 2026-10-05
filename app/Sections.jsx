@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { ProjectDetail } from './Gallery';
 import { PROFILE, TIMELINE, EXPERIENCE, SKILLS, PROJECTS } from './data';
+import { useLang, loc, Rich } from './lang';
 
 const FEATURED = PROJECTS.filter((p) => p.featured);
 const LAB = PROJECTS.filter((p) => p.kind.startsWith('Personal'));
@@ -28,18 +29,19 @@ function Label({ n, children }) {
 }
 
 function About() {
+  const { lang, t } = useLang();
   return (
     <section id="about" data-slide className="slide about">
       <div className="about-inner">
-        <Label n="02">About</Label>
+        <Label n="02">{t.about}</Label>
         <h2 className="about-statement">
-          <span className="line"><span style={{ '--i': 0 }}>I build the backend</span></span>
-          <span className="line"><span style={{ '--i': 1 }}>of commerce — <em>quiet,</em></span></span>
-          <span className="line"><span style={{ '--i': 2 }}><em>fast</em> and well documented.</span></span>
+          {t.statement.map((line, i) => (
+            <span key={i} className="line"><span style={{ '--i': i }}><Rich parts={line} /></span></span>
+          ))}
         </h2>
         <dl className="about-rows">
-          {TIMELINE.map(([label, title, place, period], i) => (
-            <div key={label} style={{ '--i': i + 3 }}>
+          {TIMELINE.map((row, i) => loc(row, lang)).map(({ label, title, place, period }, i) => (
+            <div key={i} style={{ '--i': i + 3 }}>
               <dt>{label}</dt>
               <dd><b>{title}</b><span>{place}</span></dd>
               <dd className="about-period">{period}</dd>
@@ -54,6 +56,7 @@ function About() {
 
 // Pinned: the section is FEATURED.length screens tall, the stage sticks while each screen swaps the case
 function Work({ onOpen }) {
+  const { lang, t } = useLang();
   const [active, setActive] = useState(0);
   const steps = useRef([]);
 
@@ -68,18 +71,18 @@ function Work({ onOpen }) {
   return (
     <section id="work" data-slide className="slide work" style={{ '--steps': FEATURED.length }}>
       <div className="work-stage">
-        <Label n="03">Selected work</Label>
+        <Label n="03">{t.work}</Label>
         <div className="work-cases">
-          {FEATURED.map((p, i) => (
+          {FEATURED.map((item, i) => [item, loc(item, lang)]).map(([item, p], i) => (
             <article key={p.title} className={i === active ? 'case on' : 'case'} aria-hidden={i !== active}>
               <div className="case-text">
                 <p className="case-index">{String(i + 1).padStart(2, '0')} / {String(FEATURED.length).padStart(2, '0')} · {p.kind}</p>
                 <h3>{p.title}</h3>
                 <p className="case-summary">{p.summary}</p>
                 <ul>{p.points.slice(0, 3).map((t) => <li key={t}>{t}</li>)}</ul>
-                <button className="pill" onClick={() => onOpen(p)} tabIndex={i === active ? 0 : -1}>Case details</button>
+                <button className="pill" onClick={() => onOpen(item)} tabIndex={i === active ? 0 : -1}>{t.caseDetails}</button>
               </div>
-              <ol className="flow" aria-label="Architecture">
+              <ol className="flow" aria-label={t.architecture}>
                 {p.flow.map((node, j) => <li key={node} style={{ '--j': j }}>{node}</li>)}
               </ol>
             </article>
@@ -121,12 +124,13 @@ function Count({ to }) {
 }
 
 function Experience() {
+  const { lang, t } = useLang();
   return (
     <section id="experience" data-slide className="slide exp">
       <div className="slide-inner">
-        <Label n="04">Experience</Label>
+        <Label n="04">{t.experience}</Label>
         <ol className="exp-list">
-          {EXPERIENCE.map((x, i) => (
+          {EXPERIENCE.map((x) => loc(x, lang)).map((x, i) => (
             <li key={x.company} className="rv" style={{ '--i': i + 1 }}>
               <div className="exp-head">
                 <b>{x.company}</b>
@@ -137,7 +141,7 @@ function Experience() {
               {x.metrics.length > 0 && (
                 <div className="exp-metrics">
                   {x.metrics.map(([v, suf, label]) => (
-                    <div key={label}><strong><Count to={v} />{suf}</strong><small>{label}</small></div>
+                    <div key={v}><strong><Count to={v} />{suf}</strong><small>{label}</small></div>
                   ))}
                 </div>
               )}
@@ -150,16 +154,17 @@ function Experience() {
 }
 
 function Capabilities() {
+  const { t } = useLang();
   return (
     <section id="capabilities" data-slide className="slide caps">
       <div className="slide-inner">
-        <Label n="05">Capabilities</Label>
-        <h2 className="slide-title rv" style={{ '--i': 1 }}>Tools I reach for <em>first.</em></h2>
+        <Label n="05">{t.capabilities}</Label>
+        <h2 className="slide-title rv" style={{ '--i': 1 }}><Rich parts={t.capsTitle} /></h2>
         <div className="caps-grid">
           {SKILLS.map(([group, items], i) => (
             <div key={group} className="rv" style={{ '--i': i + 2 }}>
               <small>{String(i + 1).padStart(2, '0')}</small>
-              <h3>{group}</h3>
+              <h3>{t.skillGroups[i]}</h3>
               <ul>{items.map((t) => <li key={t}>{t}</li>)}</ul>
             </div>
           ))}
@@ -170,6 +175,7 @@ function Capabilities() {
 }
 
 function Lab({ onOpen }) {
+  const { t } = useLang();
   const preview = useRef(null);
   const [hover, setHover] = useState(null);
   // Cursor-follow preview: position via CSS vars so moving the mouse never re-renders
@@ -180,7 +186,7 @@ function Lab({ onOpen }) {
   return (
     <section id="lab" data-slide className="slide lab">
       <div className="slide-inner">
-        <Label n="06">Lab — side projects</Label>
+        <Label n="06">{t.lab}</Label>
         <ul className="lab-list" onPointerMove={move} onPointerLeave={() => setHover(null)}>
           {LAB.map((p, i) => (
             <li key={p.title} className="rv" style={{ '--i': i + 1 }}>
@@ -202,31 +208,33 @@ function Lab({ onOpen }) {
 }
 
 function Archive({ onArchive }) {
+  const { t } = useLang();
   return (
     <section id="archive" data-slide className="slide archive">
       <div className="slide-inner">
-        <Label n="07">Archive</Label>
-        <h2 className="archive-count rv" style={{ '--i': 1 }}><Count to={PROJECTS.length} /> <em>projects</em></h2>
-        <p className="archive-sub rv" style={{ '--i': 2 }}>Client work, extensions and experiments — in one curved, draggable wall.</p>
+        <Label n="07">{t.archive}</Label>
+        <h2 className="archive-count rv" style={{ '--i': 1 }}><Count to={PROJECTS.length} /> <em>{t.projects}</em></h2>
+        <p className="archive-sub rv" style={{ '--i': 2 }}>{t.archiveSub}</p>
         <div className="archive-thumbs" aria-hidden="true">
           {PROJECTS.slice(0, 6).map((p, i) => (
             <img key={p.title} className="rv" style={{ '--i': i + 3 }} src={p.src(400)} alt="" loading="lazy" />
           ))}
         </div>
-        <button className="pill light rv" style={{ '--i': 9 }} onClick={onArchive}>Open the archive</button>
+        <button className="pill light rv" style={{ '--i': 9 }} onClick={onArchive}>{t.openArchive}</button>
       </div>
     </section>
   );
 }
 
 function Contact() {
-  const word = 'Let’s talk';
+  const { t } = useLang();
+  const word = t.talk;
   return (
     <section id="contact" data-slide className="slide contact">
       <div className="slide-inner">
-        <Label n="08">Contact</Label>
+        <Label n="08">{t.contact}</Label>
         <a className="contact-big" href={`mailto:${PROFILE.email}`} aria-label={`Email ${PROFILE.email}`}>
-          {[...word].map((c, i) => <span key={i} style={{ '--i': i }}>{c === ' ' ? ' ' : c}</span>)}
+          {[...word].map((c, i) => <span key={word + i} style={{ '--i': i }}>{c === ' ' ? ' ' : c}</span>)}
           <span className="contact-arrow" aria-hidden="true">→</span>
         </a>
         <div className="contact-meta rv" style={{ '--i': 4 }}>
@@ -234,11 +242,11 @@ function Contact() {
           <a href={`https://zalo.me/${PROFILE.zalo}`} target="_blank" rel="noreferrer">Zalo {PROFILE.zalo.replace(/(\d{4})(\d{3})(\d{3})/, '$1 $2 $3')} ↗</a>
           <a href={PROFILE.linkedin} target="_blank" rel="noreferrer">LinkedIn ↗</a>
           <a href={PROFILE.github} target="_blank" rel="noreferrer">GitHub ↗</a>
-          <span>{PROFILE.location}</span>
+          <span>{t.location}</span>
         </div>
         <footer className="contact-foot rv" style={{ '--i': 5 }}>
           <span>© {new Date().getFullYear()} {PROFILE.name}</span>
-          <a href="#top">Back to top ↑</a>
+          <a href="#top">{t.backToTop}</a>
         </footer>
       </div>
     </section>
