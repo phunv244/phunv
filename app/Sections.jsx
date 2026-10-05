@@ -66,9 +66,12 @@ function useSteps() {
     steps.current.forEach((el) => io.observe(el));
     return () => io.disconnect();
   }, []);
-  const stepRefs = (n) => Array.from({ length: n }, (_, i) => (
-    <div key={i} className="work-step" data-step={i} ref={(el) => { steps.current[i] = el; }} />
-  ));
+  // `from` lets a slide add free (non-snapping) lead-in / lead-out steps numbered -1 and n
+  const stepRefs = (n, from = 0) => Array.from({ length: n }, (_, i) => {
+    const step = from + i;
+    const free = step < 0 || step >= n + from * 2;
+    return <div key={step} className={free ? 'work-step free' : 'work-step'} data-step={step} ref={(el) => { steps.current[i] = el; }} />;
+  });
   return [active, stepRefs];
 }
 
@@ -164,7 +167,7 @@ function Experience() {
             ))}
           </div>
         </div>
-        <ol className="exp-rail" style={{ '--p': active / Math.max(1, n - 1) }} aria-hidden="true">
+        <ol className="exp-rail" style={{ '--p': Math.min(1, Math.max(0, active / Math.max(1, n - 1))) }} aria-hidden="true">
           {items.map((x, i) => (
             <li key={x.company} className={i <= active ? 'on' : undefined}>
               <span>{x.company}</span>
@@ -172,7 +175,8 @@ function Experience() {
           ))}
         </ol>
       </div>
-      {stepRefs(n)}
+      {/* Lead-in (-1): empty frame, camera flies into the helix. Lead-out (n): zoom out back to empty */}
+      {stepRefs(n + 2, -1)}
     </section>
   );
 }

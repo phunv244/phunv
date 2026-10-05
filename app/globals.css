@@ -265,6 +265,7 @@
     padding: calc(120px + env(safe-area-inset-top)) 6vw calc(56px + env(safe-area-inset-bottom));
   }
   .work-step { height: 100dvh; pointer-events: none; }
+  .work-step.free { scroll-snap-align: none; } /* fly-in / fly-out play while scrolling past, no stop on an empty frame */
   .work-stage + .work-step { margin-top: -100dvh; }
   .work-cases { position: relative; }
   .case {

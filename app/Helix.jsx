@@ -105,25 +105,20 @@ function setup(THREE, canvas, count, activeRef, track) {
   const io = new IntersectionObserver(([e]) => { visible = e.isIntersecting; });
   io.observe(canvas);
 
-  // Scroll state of the section: climb 0 → 1 while pinned (first → last milestone), plus how far the
-  // stage has scrolled in (enter 0 → 1) and back out past the last milestone (exit 0 → 1)
+  // Scroll state, in screens since the stage pinned: 0 = empty frame, 1 = first milestone,
+  // count = last milestone, count + 1 = empty again (the section has a lead-in and a lead-out step)
   const read = () => {
-    const r = track.current.getBoundingClientRect(), vh = innerHeight;
-    const range = r.height - vh;
-    const clamp = (v) => Math.min(1, Math.max(0, v));
-    return {
-      climb: range > 0 ? clamp(-r.top / range) : 0,
-      enter: clamp(1 - r.top / vh),
-      exit: clamp((vh - r.bottom) / vh),
-    };
+    const r = track.current.getBoundingClientRect();
+    return Math.min(count + 1, Math.max(0, -r.top / innerHeight));
   };
   const smooth = (v) => v * v * (3 - 2 * v);
+  const clamp01 = (v) => Math.min(1, Math.max(0, v));
 
   const target = new THREE.Vector3(), out = new THREE.Vector3(), side = new THREE.Vector3(), look = new THREE.Vector3();
+  const pose = new THREE.Vector3(), aim = new THREE.Vector3();
   const up = new THREE.Vector3(0, 1, 0);
   const tint = { on: new THREE.Color(ACCENT), past: new THREE.Color(FG), next: new THREE.Color(MUTED) };
-  const cur = read();
-  let raf, last = performance.now();
+  let u = read(), raf, last = performance.now();
 
   const tick = (now) => {
     raf = requestAnimationFrame(tick);
@@ -131,30 +126,31 @@ function setup(THREE, canvas, count, activeRef, track) {
     last = now;
     if (!visible) return;
 
-    // Frame-rate independent easing toward the scroll state: snap jumps, the camera glides
-    const goal = read(), k = still ? 1 : 1 - Math.exp(-dt * 3);
-    for (const key in cur) cur[key] += (goal[key] - cur[key]) * k;
-    const s = cur.climb;
+    // Frame-rate independent easing toward the scroll position: snap jumps, the camera glides
+    const k = still ? 1 : 1 - Math.exp(-dt * 2.6);
+    u += (read() - u) * k;
+    const s = clamp01((u - 1) / Math.max(1, count - 1)); // climb between first and last milestone
     const t = nodeT(0) + s * (nodeT(count - 1) - nodeT(0));
 
-    // Fly-in / fly-out: before the first milestone the camera waits far below and away, after the last
-    // it pulls far back and up, so the helix shrinks into the fog and drops out of frame (reversed on the way back)
-    const away = smooth(1 - cur.enter), gone = smooth(cur.exit);
-    const off = away + gone;
-
-    // Camera sits outside the helix facing the current point. Over the climb it rises from below
-    // (looking up at what's ahead) to above (looking down at the path so far) and pulls back for the
-    // bigger picture, so each milestone gets its own angle
-    const a = angleAt(t) + (s - .5) * .7 + (gone - away) * 1.1;
+    // Milestone pose: outside the helix facing the current point; over the climb the camera rises
+    // from below (looking up) to above (looking down) and pulls back a little
+    const a = angleAt(t) + (s - .5) * .7;
     target.copy(at(t));
     out.set(Math.cos(a), 0, Math.sin(a));
-    const dist = (narrow ? 6.4 : 5.6) + s * 2.2 + off * off * 16;
-    camera.position.copy(target).addScaledVector(out, dist).addScaledVector(up, -1.6 + s * 3.4 + (gone - away) * 9);
-    // Desktop: aim left of the node so it lands right of centre, clear of the text column
     side.crossVectors(up, out).normalize();
-    look.copy(target)
-      .addScaledVector(side, narrow ? 0 : -(1.7 + s * .6))
-      .addScaledVector(up, (narrow ? -1.3 : 0) + (gone - away) * 7);
+    pose.copy(target).addScaledVector(out, (narrow ? 6.4 : 5.6) + s * 2.2).addScaledVector(up, -1.6 + s * 3.4);
+    // Desktop: aim left of the node so it lands right of centre, clear of the text column
+    aim.copy(target).addScaledVector(side, narrow ? 0 : -(1.7 + s * .6)).addScaledVector(up, narrow ? -1.3 : 0);
+
+    // Lead-in / lead-out: 1 = deep in empty space. Far enough out that the fog swallows the whole helix,
+    // swung round and below (in) or above (out); the camera dives into the strands and later backs away
+    const into = smooth(clamp01(1 - u)), away = smooth(clamp01(u - count));
+    const off = Math.max(into, away), dir = away > into ? 1 : -1;
+    camera.position.copy(pose)
+      .addScaledVector(out, off * 20)
+      .addScaledVector(side, off * dir * 9)
+      .addScaledVector(up, off * dir * 7);
+    look.copy(aim).addScaledVector(up, off * dir * 5);
     camera.lookAt(look);
 
     const act = activeRef.current;
