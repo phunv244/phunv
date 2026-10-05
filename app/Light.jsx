@@ -89,10 +89,13 @@ function setup(THREE, canvas) {
 
   // Slow sway + shimmer of the shafts; static frame when reduced motion is requested
   const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  let raf, last = -1e9;
+  let raf, last = -1e9, visible = true;
+  // Stop rendering while the hero is scrolled off-screen
+  const io = new IntersectionObserver(([e]) => { visible = e.isIntersecting; });
+  io.observe(canvas);
   const tick = t => {
     if (!still) raf = requestAnimationFrame(tick);
-    if (t - last < 33) return; // 30fps is plenty for a slow sway
+    if (!visible || t - last < 33) return; // 30fps is plenty for a slow sway
     last = t;
     for (const b of beams) {
       const { a, o, phase } = b.userData;
@@ -105,6 +108,7 @@ function setup(THREE, canvas) {
 
   return () => {
     cancelAnimationFrame(raf);
+    io.disconnect();
     removeEventListener('resize', resize);
     renderer.dispose();
   };

@@ -30,7 +30,6 @@ export default function Gallery({ revealed = false, driftSpeed = 0 }) {
   const [targetParallax, setTargetParallax] = useState({ x: 0, y: 0 });
   const [inertia, setInertia] = useState({ x: 0, y: 0 });
   const [selected, setSelected] = useState(null);
-  const [closing, setClosing] = useState(false);
   const [viewport, setViewport] = useState({ w: 0, h: 0 });
   const [burstDone, setBurstDone] = useState(false);
   // Derived, not set in an effect: the burst class must land in the same commit as the parent's .shot,
@@ -56,6 +55,7 @@ export default function Gallery({ revealed = false, driftSpeed = 0 }) {
   const dragStartPan = useRef({ x: 0, y: 0 });
   const driftOnRef = useRef(false);
   const driftVelRef = useRef(0);
+  const visibleRef = useRef(true);
 
   // Reveal: cards burst out from screen center once; cleared after so cards mounted by panning don't replay it
   useEffect(() => {
@@ -74,22 +74,18 @@ export default function Gallery({ revealed = false, driftSpeed = 0 }) {
       setViewport({ w, h });
     });
     ro.observe(containerRef.current);
-    return () => ro.disconnect();
+    // Skip the per-frame work (and its re-renders) once the hero slide is scrolled away
+    const io = new IntersectionObserver(([e]) => { visibleRef.current = e.isIntersecting; });
+    io.observe(containerRef.current);
+    return () => { ro.disconnect(); io.disconnect(); };
   }, []);
-
-  useEffect(() => {
-    if (!selected) return;
-    const onKey = (e) => e.key === 'Escape' && closeLightbox();
-    addEventListener('keydown', onKey);
-    return () => removeEventListener('keydown', onKey);
-  }, [selected]);
 
   // Animation loop: pan smoothing, idle drift, throw inertia, parallax
   useEffect(() => {
     let rafId, lastTick = 0, last = performance.now();
     const tick = (now) => {
       rafId = requestAnimationFrame(tick);
-      if (now - lastTick < 16) return;
+      if (!visibleRef.current || now - lastTick < 16) return;
       lastTick = now;
       const dt = Math.min(0.05, (now - last) / 1000);
       last = now;
@@ -184,14 +180,6 @@ export default function Gallery({ revealed = false, driftSpeed = 0 }) {
     if (!hasDraggedRef.current) setSelected(item);
   };
 
-  function closeLightbox() {
-    setClosing(true);
-    setTimeout(() => {
-      setSelected(null);
-      setClosing(false);
-    }, 300);
-  }
-
   // Infinite grid: only the cells covering the viewport (+ margin) are rendered
   const vw = viewport.w || 1200;
   const vh = viewport.h || 800;
@@ -254,30 +242,47 @@ export default function Gallery({ revealed = false, driftSpeed = 0 }) {
         <div className="gx-vignette" />
       </div>
 
-      {/* Portaled to <body>: the 3D ancestors (perspective) would otherwise trap it under the header */}
-      {selected && createPortal(
-        <div
-          className={closing ? 'gx-lightbox closing' : 'gx-lightbox'}
-          role="dialog"
-          aria-modal="true"
-          aria-label={selected.title}
-          onClick={(e) => e.target === e.currentTarget && !closing && closeLightbox()}
-        >
-          <button className="gx-close" onClick={() => !closing && closeLightbox()} aria-label="Close">×</button>
-          <article className="gx-detail">
-            <img src={selected.src(1200)} alt="" />
-            <div className="gx-info">
-              <p className="gx-kind">{selected.kind} · {selected.year}</p>
-              <h2>{selected.title}</h2>
-              <p className="gx-summary">{selected.summary}</p>
-              <ul>{selected.points.map((t, i) => <li key={i} style={{ '--i': i }}>{t}</li>)}</ul>
-              <div className="gx-stack">{selected.stack.map((t) => <span key={t}>{t}</span>)}</div>
-              {selected.link && <a className="pill light" href={selected.link} target="_blank" rel="noreferrer">Visit live</a>}
-            </div>
-          </article>
-        </div>,
-        document.body
-      )}
+      {selected && <ProjectDetail item={selected} onClose={() => setSelected(null)} />}
     </>
+  );
+}
+
+// Project detail dialog, shared by the gallery and the Lab list
+export function ProjectDetail({ item, onClose }) {
+  const [closing, setClosing] = useState(false);
+  const close = () => {
+    if (closing) return;
+    setClosing(true);
+    setTimeout(onClose, 300);
+  };
+  useEffect(() => {
+    const onKey = (e) => e.key === 'Escape' && close();
+    addEventListener('keydown', onKey);
+    return () => removeEventListener('keydown', onKey);
+  });
+
+  // Portaled to <body>: the 3D ancestors (perspective) would otherwise trap it under the header
+  return createPortal(
+    <div
+      className={closing ? 'gx-lightbox closing' : 'gx-lightbox'}
+      role="dialog"
+      aria-modal="true"
+      aria-label={item.title}
+      onClick={(e) => e.target === e.currentTarget && close()}
+    >
+      <button className="gx-close" onClick={close} aria-label="Close" autoFocus>×</button>
+      <article className="gx-detail">
+        <img src={item.src(1200)} alt="" />
+        <div className="gx-info">
+          <p className="gx-kind">{item.kind} · {item.year}</p>
+          <h2>{item.title}</h2>
+          <p className="gx-summary">{item.summary}</p>
+          <ul>{item.points.map((t, i) => <li key={i} style={{ '--i': i }}>{t}</li>)}</ul>
+          <div className="gx-stack">{item.stack.map((t) => <span key={t}>{t}</span>)}</div>
+          {item.link && <a className="pill light" href={item.link} target="_blank" rel="noreferrer">Visit live</a>}
+        </div>
+      </article>
+    </div>,
+    document.body
   );
 }

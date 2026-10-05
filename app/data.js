@@ -7,59 +7,46 @@ export const PROFILE = {
   location: 'Ha Noi, Vietnam',
   email: 'phu0908204@gmail.com',
   github: 'https://github.com/phuphu0981',
-  summary:
-    'Backend developer building Magento 2 commerce, headless WordPress and Go services. I like clean module boundaries, measurable performance and writing the docs next to the code.',
   stack: ['Magento 2', 'Laravel', 'Go', 'WordPress', 'GraphQL', 'Kafka', 'Docker'],
 };
 
+// About panel: three rows, newest first
+export const TIMELINE = [
+  ['Now', 'Backend Developer', 'Magenest', '11/2025 —'],
+  ['Before', 'Laravel Developer', 'HQ Group · CoreSys', '2025'],
+  ['Study', 'B.Sc. Information Technology', 'UTT · GPA 3.6 / 4.0', '2022 —'],
+];
+
+// metrics: [value, suffix, label]; counted up when the slide enters
 export const EXPERIENCE = [
   {
-    company: 'Magenest',
-    role: 'Backend Developer — Magento 2 / WordPress / Go',
-    period: '11/2025 — Present',
-    points: [
-      'B2B/B2C Magento 2.4.8 stores: GraphQL & REST APIs, message queues, indexer tuning, checkout stock rules.',
-      'AI commerce add-ons: purchase tracking, recommendation feeds, cron + queue sync with dead-letter and alerts.',
-      'Upgraded in-house extensions to Magento 2.4.8 / PHP 8.4; built a Vietmap/Goong map service module.',
-      'Headless WordPress Page Builder backend (WPGraphQL) and a Kafka → OpenSearch search service in Go.',
-    ],
+    company: 'Magenest', role: 'Backend Developer', period: '11/2025 — Now',
+    line: 'Magento 2 commerce, headless WordPress and Go services for clients and in-house products.',
+    metrics: [[7, '', 'projects'], [3, '', 'platforms']],
   },
   {
-    company: 'HQ Group',
-    role: 'Backend Developer — Intern / Junior (Laravel)',
-    period: '02/2025 — 10/2025',
-    points: [
-      'ClickUp API → KPI dashboard: automated 100% of weekly progress reports.',
-      'Real-time payroll (fixed wage + affiliate share): cut manual work by 80%.',
-      'Inventory In-Out-Balance with transactional SKU integrity across branches.',
-    ],
+    company: 'HQ Group', role: 'Backend Developer — Laravel', period: '02/2025 — 10/2025',
+    line: 'Internal KPI, payroll and inventory systems.',
+    metrics: [[100, '%', 'weekly reports automated'], [80, '%', 'less manual payroll work']],
   },
   {
-    company: 'CoreSys',
-    role: 'Backend Developer — PHP / Laravel',
-    period: '01/2025',
-    points: ['Corporate web portal on MVC, Cloudinary media pipeline, transactional mailers and admin dashboards.'],
+    company: 'CoreSys', role: 'Backend Developer — Laravel', period: '01/2025',
+    line: 'Corporate web portal, Cloudinary media pipeline and admin dashboards.',
+    metrics: [],
   },
 ];
 
-export const EDUCATION = {
-  school: 'University of Transport Technology (UTT)',
-  degree: 'B.Sc. Information Technology',
-  period: '2022 — Present',
-  note: 'GPA 3.6 / 4.0 · Excellent merit scholarships (3 semesters)',
-};
-
 export const SKILLS = [
-  ['Commerce', ['Magento 2 / Adobe Commerce', 'PWA Studio', 'Plugins · Observers · Service contracts', 'Queues · Cron · Indexers']],
-  ['Backend', ['PHP 8.4 · Laravel 11', 'Go · Gin · GoFr', 'Python · FastAPI', 'REST · GraphQL']],
-  ['Data', ['MySQL', 'PostgreSQL', 'Redis', 'Kafka · OpenSearch']],
-  ['Ops & Quality', ['Docker · Nginx · Linux', 'GitLab CI', 'SonarQube · PHPCS · phpstan', 'VPS deploy · Cloudflare tunnel']],
+  ['Commerce', ['Magento 2', 'Adobe Commerce', 'PWA Studio', 'Plugins & observers', 'Queues & indexers']],
+  ['Backend', ['PHP 8.4', 'Laravel 11', 'Go', 'Python · FastAPI', 'REST · GraphQL']],
+  ['Data', ['MySQL', 'PostgreSQL', 'Redis', 'Kafka', 'OpenSearch']],
+  ['Ops & Quality', ['Docker', 'Nginx · Linux', 'GitLab CI', 'SonarQube', 'phpstan · PHPCS']],
 ];
 
 // img: cover art slug in public/works/<img>-{400,640,1200}.webp
 export const PROJECTS = [
   {
-    title: 'Oroca B2B Commerce', year: 2026, kind: 'Magenest · Magento 2', img: 'obsidian-flow',
+    title: 'Oroca B2B Commerce', featured: true, flow: ['Next.js storefront', 'GraphQL', 'Magento 2.4.8', 'MySQL queues', 'Indexers'], year: 2026, kind: 'Magenest · Magento 2', img: 'obsidian-flow',
     summary: 'Headless B2B/B2C store on Magento 2.4.8 with company accounts, vouchers and GraphQL storefront.',
     points: [
       'Clinic Setup lead module: REST + GraphQL, file upload, admin grid, email notifications.',
@@ -71,7 +58,7 @@ export const PROJECTS = [
     stack: ['Magento 2.4.8', 'PHP 8.4', 'GraphQL', 'MySQL queues', 'dompdf'],
   },
   {
-    title: 'AI Bought Together', year: 2026, kind: 'Magenest · AI Commerce', img: 'neon-mirage',
+    title: 'AI Bought Together', featured: true, flow: ['Storefront events', 'Observers', 'CSV feed', 'AI engine', 'Recommendations'], year: 2026, kind: 'Magenest · AI Commerce', img: 'neon-mirage',
     summary: '“Frequently bought together” recommendations powered by an external AI engine.',
     points: [
       'Session, add-to-cart and order tracking feeding a CSV dataset for the AI endpoint.',
@@ -102,7 +89,7 @@ export const PROJECTS = [
     stack: ['Magento 2.4.8', 'PHP 8.4', 'Mailchimp Transactional'],
   },
   {
-    title: 'Fulbright Page Builder', year: 2026, kind: 'Magenest · Headless WordPress', img: 'glass-reverie',
+    title: 'Fulbright Page Builder', featured: true, flow: ['Editors', 'WordPress + ACF', 'WPGraphQL', 'Page Builder', 'Next.js'], year: 2026, kind: 'Magenest · Headless WordPress', img: 'glass-reverie',
     summary: 'University website: WordPress as a GraphQL CMS behind a Next.js frontend and page builder.',
     points: [
       'Page Builder backend: revisions, slug validation & locks, rate limiting, token-revoked session logout.',
@@ -113,7 +100,7 @@ export const PROJECTS = [
     stack: ['WordPress', 'WPGraphQL', 'ACF Pro', 'Polylang', 'Next.js'],
   },
   {
-    title: 'Search Service', year: 2026, kind: 'Magenest · Go microservice', img: 'silent-orbit',
+    title: 'Search Service', featured: true, flow: ['Supply service', 'Kafka', 'Go consumer', 'OpenSearch', 'Search API'], year: 2026, kind: 'Magenest · Go microservice', img: 'silent-orbit',
     summary: 'Search for a supplier & package platform: Kafka events indexed into OpenSearch.',
     points: [
       'Kafka consumer indexing entitlements into OpenSearch 2.19 with explicit mappings.',

@@ -2,13 +2,18 @@
 import { useEffect, useRef, useState } from 'react';
 import Light from './Light';
 import Gallery from './Gallery';
-import { PROFILE, EXPERIENCE, EDUCATION, SKILLS } from './data';
+import Sections from './Sections';
+import { PROFILE } from './data';
+
+// Slide ids in scroll order; index = position in the deck counter
+const SLIDES = ['top', 'about', 'work', 'experience', 'capabilities', 'lab', 'archive', 'contact'];
 
 export default function Home() {
   const [loaded, setLoaded] = useState(false);
   const [rolling, setRolling] = useState(false);
   const [shot, setShot] = useState(false); // last frame reached: flash + gallery enters
-  const [view, setView] = useState('hero'); // 'hero' | 'works' | 'about'
+  const [archive, setArchive] = useState(false); // full-screen draggable gallery
+  const [active, setActive] = useState(0); // index into SLIDES
   const [word, setWord] = useState(0);
   const video = useRef(null);
 
@@ -41,39 +46,62 @@ export default function Home() {
     return () => clearInterval(id);
   }, []);
 
+  // Slide tracking: whichever slide crosses the viewport's center line is active; slides animate in once
   useEffect(() => {
-    if (view !== 'about') return;
-    const onKey = (e) => e.key === 'Escape' && setView('hero');
+    const slides = [...document.querySelectorAll('[data-slide]')];
+    const io = new IntersectionObserver((entries) => {
+      for (const e of entries) {
+        if (!e.isIntersecting) continue;
+        e.target.classList.add('in');
+        setActive(slides.indexOf(e.target));
+      }
+    }, { rootMargin: '-50% 0px -50% 0px' });
+    slides.forEach((el) => io.observe(el));
+    return () => io.disconnect();
+  }, []);
+
+  useEffect(() => {
+    if (!archive) return;
+    // Leave Escape to an open project dialog first
+    const onKey = (e) => e.key === 'Escape' && !document.querySelector('.gx-lightbox') && setArchive(false);
     addEventListener('keydown', onKey);
     return () => removeEventListener('keydown', onKey);
-  }, [view]);
+  }, [archive]);
 
-  const go = (next) => (e) => {
-    e.preventDefault();
-    if (next === 'works') setShot(true);
-    setView((v) => (v === next ? 'hero' : next));
+  // The draggable wall lives in the hero (perspective traps position: fixed), so jump there and lock scroll
+  const openArchive = () => {
+    scrollTo({ top: 0, behavior: 'instant' });
+    setShot(true);
+    setArchive(true);
   };
 
+  const navClass = (id) => (SLIDES[active] === id ? 'active' : undefined);
+
   return (
-    <div className={[loaded && 'loaded', shot && 'shot', view === 'works' && 'full-gallery', view === 'about' && 'about-open'].filter(Boolean).join(' ') || undefined}>
+    <div className={[loaded && 'loaded', shot && 'shot', archive && 'full-gallery', active > 0 && 'scrolled'].filter(Boolean).join(' ') || undefined}>
       <div className="loader"><span>NGUYEN VAN PHU</span></div>
 
       <header>
-        <a href="#" className="logo reveal" style={{ '--d': '.2s' }} onClick={go('hero')}>Phu.</a>
+        <a href="#top" className="logo reveal" style={{ '--d': '.2s' }} onClick={() => setArchive(false)}>Phu.</a>
         <div className="reveal" style={{ '--d': '.3s' }}><small>Currently</small>Backend @ {PROFILE.company}</div>
         <div className="reveal" style={{ '--d': '.4s' }}><small>Based in</small>{PROFILE.location}</div>
         <nav className="reveal" style={{ '--d': '.5s' }}>
-          <a href="#about" className={view === 'about' ? 'active' : undefined} onClick={go('about')}>About</a>
-          <a href="#works" className={view === 'works' ? 'active' : undefined} onClick={go('works')}>Works</a>
-          <a href={`mailto:${PROFILE.email}`}>Contact</a>
-          <a href={PROFILE.github} target="_blank" rel="noreferrer">GitHub</a>
+          <a href="#work" className={navClass('work')}>Work</a>
+          <a href="#about" className={navClass('about')}>About</a>
+          <a href="#experience" className={navClass('experience')}>Experience</a>
+          <a href="#contact" className={navClass('contact')}>Contact</a>
         </nav>
-        <a href="#works" className="pill reveal" style={{ '--d': '.6s' }} onClick={go(view === 'hero' ? 'works' : 'hero')}>
-          {view === 'hero' ? 'Explore Works' : 'Back to Hero'}
-        </a>
+        {archive
+          ? <button className="pill reveal" style={{ '--d': '.6s' }} onClick={() => setArchive(false)}>Close archive</button>
+          : <a href="#contact" className="pill reveal" style={{ '--d': '.6s' }}>Let’s talk</a>}
       </header>
 
-      <section className="hero">
+      <div className="deck-count" aria-hidden="true">
+        <b>{String(active + 1).padStart(2, '0')}</b> / {String(SLIDES.length).padStart(2, '0')}
+        <i style={{ '--p': active / (SLIDES.length - 1) }} />
+      </div>
+
+      <section id="top" className="hero" data-slide>
         <Light />
 
         {/* Infinite curved drag gallery */}
@@ -97,7 +125,7 @@ export default function Home() {
             <span className="line"><span style={{ '--d': '.7s' }}>Backend</span></span>
             <span className="line"><span style={{ '--d': '.85s' }}>Developer</span></span>
           </h1>
-          <a href="#works" className="pill light reveal" style={{ '--d': '1s' }} onClick={go('works')}>
+          <a href="#work" className="pill light reveal" style={{ '--d': '1s' }}>
             Explore Works
           </a>
         </div>
@@ -108,43 +136,7 @@ export default function Home() {
         </div>
       </section>
 
-      <aside className="about" aria-hidden={view !== 'about'} inert={view !== 'about' || undefined}>
-        <div className="about-inner">
-          <p className="eyebrow">02 — ABOUT</p>
-          <h2 style={{ '--i': 0 }}>{PROFILE.name}</h2>
-          <p className="about-lead" style={{ '--i': 1 }}>{PROFILE.summary}</p>
-
-          <h3 style={{ '--i': 2 }}>Experience</h3>
-          <ol className="timeline">
-            {EXPERIENCE.map((x, i) => (
-              <li key={x.company} style={{ '--i': i + 3 }}>
-                <div className="tl-head"><b>{x.company}</b><span>{x.period}</span></div>
-                <p className="tl-role">{x.role}</p>
-                <ul>{x.points.map((t) => <li key={t}>{t}</li>)}</ul>
-              </li>
-            ))}
-          </ol>
-
-          <h3 style={{ '--i': 6 }}>Skills</h3>
-          <div className="skills">
-            {SKILLS.map(([group, items], i) => (
-              <div key={group} style={{ '--i': i + 7 }}>
-                <small>{group}</small>
-                {items.map((t) => <span key={t}>{t}</span>)}
-              </div>
-            ))}
-          </div>
-
-          <h3 style={{ '--i': 11 }}>Education</h3>
-          <div className="tl-head" style={{ '--i': 12 }}><b>{EDUCATION.school}</b><span>{EDUCATION.period}</span></div>
-          <p className="tl-role" style={{ '--i': 12 }}>{EDUCATION.degree} · {EDUCATION.note}</p>
-
-          <div className="about-cta" style={{ '--i': 13 }}>
-            <a className="pill light" href={`mailto:${PROFILE.email}`}>{PROFILE.email}</a>
-            <a className="pill" href={PROFILE.github} target="_blank" rel="noreferrer">GitHub</a>
-          </div>
-        </div>
-      </aside>
+      <Sections onArchive={openArchive} />
     </div>
   );
 }
