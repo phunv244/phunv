@@ -231,6 +231,8 @@ function Contact() {
         </a>
         <div className="contact-meta rv" style={{ '--i': 4 }}>
           <a href={`mailto:${PROFILE.email}`}>{PROFILE.email}</a>
+          <a href={`https://zalo.me/${PROFILE.zalo}`} target="_blank" rel="noreferrer">Zalo {PROFILE.zalo.replace(/(\d{4})(\d{3})(\d{3})/, '$1 $2 $3')} ↗</a>
+          <a href={PROFILE.linkedin} target="_blank" rel="noreferrer">LinkedIn ↗</a>
           <a href={PROFILE.github} target="_blank" rel="noreferrer">GitHub ↗</a>
           <span>{PROFILE.location}</span>
         </div>

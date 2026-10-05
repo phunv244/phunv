@@ -7,6 +7,8 @@ export const PROFILE = {
   location: 'Ha Noi, Vietnam',
   email: 'phu0908204@gmail.com',
   github: 'https://github.com/phuphu0981',
+  linkedin: 'https://www.linkedin.com/in/nguyen-phu-5514a8412/',
+  zalo: '0976914076',
   stack: ['Magento 2', 'Laravel', 'Go', 'WordPress', 'GraphQL', 'Kafka', 'Docker'],
 };
 
