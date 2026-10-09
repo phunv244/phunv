@@ -1,4 +1,5 @@
 import { Instrument_Serif, Inter, Mrs_Saint_Delafield, Noto_Serif_Display } from 'next/font/google';
+import 'lenis/dist/lenis.css';
 import './globals.css';
 
 const serif = Instrument_Serif({ subsets: ['latin'], weight: '400', style: ['normal', 'italic'], variable: '--serif' });

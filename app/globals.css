@@ -103,7 +103,7 @@
   .gx-lightbox {
     position: fixed; inset: 0; z-index: 99999; display: grid; place-items: center; padding: 40px;
     background: rgba(0,0,0,.95); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
-    cursor: default; animation: gxFade .3s ease-out;
+    cursor: default; animation: gxFade .3s ease-out; overscroll-behavior: contain;
   }
   .gx-lightbox.closing { pointer-events: none; animation: gxFadeOut .3s ease-out forwards; }
   .gx-lightbox { overflow-y: auto; place-items: safe center; }
@@ -190,14 +190,20 @@
   .ticker { display: inline-block; overflow: hidden; vertical-align: bottom; }
   .ticker > span { display: inline-block; animation: rise .6s cubic-bezier(.2,.7,.2,1) both; }
 
-  /* ---------- Slide deck: native scroll snap, strict on desktop, soft on touch ---------- */
-  html { scroll-behavior: smooth; scroll-snap-type: y proximity; }
-  @media (min-width: 1025px) { html { scroll-snap-type: y mandatory; } }
+  /* ---------- Slide deck: one continuous scroll (Lenis glides the wheel, see scroll.js) ---------- */
   html:has(.full-gallery) { overflow: hidden; }
-  .hero, .slide, .work-step { scroll-snap-align: start; }
-  .work { scroll-snap-align: none; }
 
-  .slide { position: relative; min-height: 100dvh; background: var(--bg); border-top: 1px solid rgba(242,238,233,.06); }
+  /* World.jsx: fixed 3D space behind every slide; the hero is opaque and simply scrolls off it */
+  .world { position: fixed; inset: 0; pointer-events: none; }
+  .world canvas { display: block; width: 100%; height: 100%; }
+  .world::after {
+    content: ""; position: absolute; inset: 0;
+    background: radial-gradient(ellipse 120% 95% at 62% 48%, transparent 42%, rgba(12,9,7,.6));
+  }
+
+  /* Transparent so the world shows through; [data-depth] is tilted per frame by scroll.js */
+  .slide { position: relative; min-height: 100dvh; }
+  [data-depth] { transform-origin: 50% 50%; backface-visibility: hidden; }
   .slide-inner {
     width: min(1200px, 100%); min-height: 100dvh; margin: 0 auto;
     display: flex; flex-direction: column; justify-content: center; gap: 40px;
@@ -209,7 +215,7 @@
   button.pill { font-family: inherit; color: inherit; cursor: pointer; }
 
   /* Reveal: children marked .rv rise in, staggered by --i, the first time their slide gets .in */
-  .rv { opacity: 0; transform: translateY(24px); filter: blur(8px); }
+  .rv { opacity: 0; transform: translateY(24px); }
   .in .rv { animation: in .9s cubic-bezier(.2,.7,.2,1) both; animation-delay: calc(.1s + var(--i, 0) * 80ms); }
 
   /* Header gets a backing once the hero is behind us */
@@ -266,12 +272,16 @@
   }
   .work-step { height: 100dvh; pointer-events: none; }
   .work-stage + .work-step { margin-top: -100dvh; }
-  .work-cases { position: relative; }
+  .work-cases { position: relative; perspective: 1400px; }
+  /* Case swap on the same drum as the slides: the next case waits below, tipped toward you; the last one
+     sinks back and up */
   .case {
     position: absolute; inset: 0; display: grid; grid-template-columns: 6fr 4fr; gap: 6vw; align-items: center;
-    opacity: 0; visibility: hidden; transition: opacity .5s ease, visibility .5s;
+    opacity: 0; visibility: hidden; transform: translate3d(0, 9vh, -220px) rotateX(-12deg);
+    transition: opacity .6s ease, visibility .6s, transform 1s cubic-bezier(.2,.7,.2,1);
   }
-  .case.on { opacity: 1; visibility: visible; }
+  .case.past { transform: translate3d(0, -9vh, -260px) rotateX(10deg); }
+  .case.on { opacity: 1; visibility: visible; transform: none; }
   .case-text > * { opacity: 0; }
   .case.on .case-text > * { animation: in .8s cubic-bezier(.2,.7,.2,1) both; }
   .case.on .case-text > :nth-child(2) { animation-delay: .06s; }
@@ -300,31 +310,31 @@
   .case.on .flow li { animation: in .6s cubic-bezier(.2,.7,.2,1) both; animation-delay: calc(.2s + var(--j) * 110ms); }
   .case.on .flow li::before { animation: drawY .4s ease-out both; animation-delay: calc(.1s + var(--j) * 110ms); }
   @keyframes drawY { to { transform: scaleY(1); } }
+  /* Wide screens: the labels float beside the 3D pipeline's nodes (Sections.jsx moves them) */
+  .flow-3d .flow { opacity: var(--flow-o, 1); }
+  .flow-3d .flow li { width: max-content; background: rgba(26,21,18,.72); }
+  .flow-3d .flow li + li { margin-top: 0; }
+  .flow-3d .flow li + li::before { display: none; }
   .work-dots { display: flex; gap: 8px; }
   .work-dots span { width: 18px; height: 2px; background: rgba(242,238,233,.2); transition: width .5s, background .5s; }
   .work-dots span.on { width: 48px; background: var(--fg); }
 
-  /* ---------- 04 Experience: pinned like Work, a 3D helix (Helix.jsx) behind the milestone text ---------- */
-  .exp { scroll-snap-align: none; }
-  .exp-stage { position: sticky; top: 0; height: 100dvh; overflow: hidden; }
+  /* ---------- 04 Experience: pinned like Work; the world's cloud turns into the DNA behind the text ---------- */
+  .exp-stage { position: sticky; top: 0; height: 100dvh; }
   .exp-stage + .work-step { margin-top: -100dvh; }
-  .helix {
-    position: absolute; inset: 0; width: 100%; height: 100%; display: block;
-    /* Soft top/bottom edges: if the column is still on screen while the stage slides, it fades, never cuts */
-    -webkit-mask-image: linear-gradient(transparent, #000 18%, #000 82%, transparent);
-            mask-image: linear-gradient(transparent, #000 18%, #000 82%, transparent);
-  }
   .exp-content {
     position: relative; z-index: 1; height: 100%; width: min(1200px, 100%); margin: 0 auto; pointer-events: none;
     display: grid; grid-template-rows: auto 1fr; gap: 32px;
     padding: calc(120px + env(safe-area-inset-top)) 6vw calc(56px + env(safe-area-inset-bottom));
   }
-  .exp-ms { position: relative; }
+  .exp-ms { position: relative; perspective: 1400px; }
   .ms {
     position: absolute; left: 0; top: 50%; translate: 0 -50%; width: min(520px, 100%);
-    opacity: 0; visibility: hidden; transition: opacity .5s ease, visibility .5s;
+    opacity: 0; visibility: hidden; transform: translate3d(0, 9vh, -220px) rotateX(-12deg);
+    transition: opacity .6s ease, visibility .6s, transform 1s cubic-bezier(.2,.7,.2,1);
   }
-  .ms.on { opacity: 1; visibility: visible; }
+  .ms.past { transform: translate3d(0, -9vh, -260px) rotateX(10deg); }
+  .ms.on { opacity: 1; visibility: visible; transform: none; }
   .ms > * { opacity: 0; }
   .ms.on > * { animation: in .8s cubic-bezier(.2,.7,.2,1) both; }
   .ms.on > :nth-child(2) { animation-delay: .08s; }
@@ -339,15 +349,15 @@
   .exp-metrics strong { display: block; font: 400 clamp(40px, 4.4vw, 64px)/1 var(--serif); font-variant-numeric: tabular-nums; }
   .exp-metrics small { display: block; margin-top: 6px; font: 11px/1.4 monospace; color: var(--muted); max-width: 12em; }
 
-  /* Evolution rail: oldest at the bottom, the line fills upward with the active milestone */
+  /* Evolution rail: oldest at the top, like the orbs the DNA has already carried up; fills downward */
   .exp-rail {
     position: absolute; z-index: 1; right: 6vw; top: 50%; translate: 0 -50%; height: min(52dvh, 420px);
-    list-style: none; display: flex; flex-direction: column-reverse; justify-content: space-between;
+    list-style: none; display: flex; flex-direction: column; justify-content: space-between;
     padding-right: 18px; border-right: 1px solid rgba(242,238,233,.14);
   }
   .exp-rail::after {
-    content: ""; position: absolute; right: -1px; bottom: 0; width: 1px; height: 100%; background: #d9b99b;
-    transform: scaleY(var(--p)); transform-origin: bottom; transition: transform .8s cubic-bezier(.65,0,.35,1);
+    content: ""; position: absolute; right: -1px; top: 0; width: 1px; height: 100%; background: #d9b99b;
+    transform: scaleY(var(--p)); transform-origin: top; transition: transform .8s cubic-bezier(.65,0,.35,1);
   }
   .exp-rail li { position: relative; font: 11px monospace; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); text-align: right; transition: color .4s; }
   .exp-rail li::after {
@@ -362,7 +372,7 @@
     .ms { top: auto; bottom: 0; translate: none; }
     .exp-stage::after {
       content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 62%; pointer-events: none;
-      background: linear-gradient(transparent, #1a1512 45%);
+      background: linear-gradient(rgba(26,21,18,0), rgba(26,21,18,.92) 45%);
     }
     .exp-content { z-index: 2; }
     .ms-line { margin-bottom: 20px; }
@@ -526,6 +536,5 @@
     .gx-close { top: 16px; right: 16px; }
   }
   @media (prefers-reduced-motion: reduce) {
-    html { scroll-behavior: auto; }
     *, *::before, *::after { transition: none !important; animation-duration: .01s !important; animation-delay: 0s !important; }
   }

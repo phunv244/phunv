@@ -1,14 +1,15 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
 import { ProjectDetail } from './Gallery';
-import Helix from './Helix';
 import { PROFILE, TIMELINE, EXPERIENCE, SKILLS, PROJECTS } from './data';
 import { useLang, loc, Rich } from './lang';
+import { onFrame } from './scroll';
 
 const FEATURED = PROJECTS.filter((p) => p.featured);
 const LAB = PROJECTS.filter((p) => p.kind.startsWith('Personal'));
 
-// Every slide after the hero. `.rv` children rise in once the slide gets `.in` (set in page.jsx)
+// Every slide after the hero. `.rv` children rise in once the slide gets `.in` (set in page.jsx);
+// `data-depth` marks the block that scroll.js tilts in and out of the 3D world
 export default function Sections({ onArchive }) {
   const [detail, setDetail] = useState(null);
   return (
@@ -33,7 +34,7 @@ function About() {
   const { lang, t } = useLang();
   return (
     <section id="about" data-slide className="slide about">
-      <div className="about-inner">
+      <div className="about-inner" data-depth>
         <Label n="02">{t.about}</Label>
         <h2 className="about-statement">
           {t.statement.map((line, i) => (
@@ -55,35 +56,56 @@ function About() {
   );
 }
 
-// Pinned slides: one 100dvh snap step per item; whichever step crosses the centre line is active
-function useSteps() {
+// Pinned slides: one 100dvh step per item; the active step follows the scroll position itself, so jumps
+// (anchor links, Home/End) land on the right item too. Same-value updates do not re-render
+function useSteps(id, n) {
   const [active, setActive] = useState(0);
-  const steps = useRef([]);
-  useEffect(() => {
-    const io = new IntersectionObserver((entries) => {
-      for (const e of entries) if (e.isIntersecting) setActive(Number(e.target.dataset.step));
-    }, { rootMargin: '-50% 0px -50% 0px' });
-    steps.current.forEach((el) => io.observe(el));
-    return () => io.disconnect();
-  }, []);
-  const stepRefs = (n) => Array.from({ length: n }, (_, i) => (
-    <div key={i} className="work-step" data-step={i} ref={(el) => { steps.current[i] = el; }} />
-  ));
-  return [active, stepRefs];
+  useEffect(() => onFrame(({ y, vh, slides }) => {
+    const s = slides.find((x) => x.id === id);
+    if (s) setActive(Math.min(n - 1, Math.max(0, Math.round((y - s.top) / vh))));
+  }), [id, n]);
+  const steps = Array.from({ length: n }, (_, i) => <div key={i} className="work-step" />);
+  return [active, steps];
 }
+
+// Steps already shown sink back and up, steps still to come wait below: the swap follows the scroll direction
+const stepClass = (base, i, active) => `${base}${i === active ? ' on' : i < active ? ' past' : ''}`;
 
 // Pinned: the section is FEATURED.length screens tall, the stage sticks while each screen swaps the case
 function Work({ onOpen }) {
   const { lang, t } = useLang();
-  const [active, stepRefs] = useSteps();
+  const [active, steps] = useSteps('work', FEATURED.length);
+  const stage = useRef(null);
+
+  // Wide screens: each flow label rides its node of the 3D pipeline (positions from World.jsx), on the
+  // outer side of the node. `translate` leaves the reveal animation's `transform` alone
+  useEffect(() => onFrame(({ nodes }) => {
+    const el = stage.current;
+    if (!el) return;
+    if (!nodes) {
+      if (el.classList.contains('flow-3d')) {
+        el.classList.remove('flow-3d');
+        el.querySelectorAll('.flow li').forEach((li) => { li.style.translate = ''; });
+      }
+      return;
+    }
+    el.classList.add('flow-3d');
+    el.style.setProperty('--flow-o', nodes.w);
+    el.querySelectorAll('.case.on .flow li').forEach((li, i) => {
+      const [x, y, left] = nodes.pts[i], r = li.getBoundingClientRect();
+      const [tx, ty] = (li.style.translate || '0px 0px').split(' ').map(parseFloat);
+      const gx = left ? x - 52 - r.width : x + 52;
+      li.style.translate = `${(gx - (r.left - tx)).toFixed(1)}px ${(y - r.height / 2 - (r.top - (ty || 0))).toFixed(1)}px`;
+    });
+  }, true), []);
 
   return (
     <section id="work" data-slide className="slide work" style={{ '--steps': FEATURED.length }}>
-      <div className="work-stage">
+      <div className="work-stage" data-depth ref={stage}>
         <Label n="03">{t.work}</Label>
         <div className="work-cases">
           {FEATURED.map((item, i) => [item, loc(item, lang)]).map(([item, p], i) => (
-            <article key={p.title} className={i === active ? 'case on' : 'case'} aria-hidden={i !== active}>
+            <article key={p.title} className={stepClass('case', i, active)} aria-hidden={i !== active}>
               <div className="case-text">
                 <p className="case-index">{String(i + 1).padStart(2, '0')} / {String(FEATURED.length).padStart(2, '0')} · {p.kind}</p>
                 <h3>{p.title}</h3>
@@ -101,7 +123,7 @@ function Work({ onOpen }) {
           {FEATURED.map((_, i) => <span key={i} className={i === active ? 'on' : undefined} />)}
         </div>
       </div>
-      {stepRefs(FEATURED.length)}
+      {steps}
     </section>
   );
 }
@@ -131,23 +153,21 @@ function Count({ to }) {
   return <span ref={el}>{n.toFixed(decimals)}</span>;
 }
 
-// Evolution: milestones climb a 3D helix, oldest at the bottom; the rail fills upward
+// Evolution: the DNA in World.jsx carries one milestone per step, oldest first; the rail fills downward
 function Experience() {
   const { lang, t } = useLang();
-  const [active, stepRefs] = useSteps();
-  const section = useRef(null);
   const items = EXPERIENCE.map((x) => loc(x, lang));
   const n = items.length;
+  const [active, steps] = useSteps('experience', n);
 
   return (
-    <section id="experience" data-slide className="slide exp" ref={section} style={{ '--steps': n }}>
-      <div className="exp-stage">
-        <Helix count={n} active={active} track={section} />
+    <section id="experience" data-slide className="slide exp" style={{ '--steps': n }}>
+      <div className="exp-stage" data-depth>
         <div className="exp-content">
           <Label n="04">{t.experience}</Label>
           <div className="exp-ms">
             {items.map((x, i) => (
-              <article key={x.company} className={i === active ? 'ms on' : 'ms'} aria-hidden={i !== active}>
+              <article key={x.company} className={stepClass('ms', i, active)} aria-hidden={i !== active}>
                 <p className="ms-index">{String(i + 1).padStart(2, '0')} / {String(n).padStart(2, '0')} · {x.period}</p>
                 <h3>{x.company}</h3>
                 <p className="ms-role">{x.role}</p>
@@ -172,7 +192,7 @@ function Experience() {
           ))}
         </ol>
       </div>
-      {stepRefs(n)}
+      {steps}
     </section>
   );
 }
@@ -181,7 +201,7 @@ function Capabilities() {
   const { t } = useLang();
   return (
     <section id="capabilities" data-slide className="slide caps">
-      <div className="slide-inner">
+      <div className="slide-inner" data-depth>
         <Label n="05">{t.capabilities}</Label>
         <h2 className="slide-title rv" style={{ '--i': 1 }}><Rich parts={t.capsTitle} /></h2>
         <div className="caps-grid">
@@ -209,7 +229,7 @@ function Lab({ onOpen }) {
   };
   return (
     <section id="lab" data-slide className="slide lab">
-      <div className="slide-inner">
+      <div className="slide-inner" data-depth>
         <Label n="06">{t.lab}</Label>
         <ul className="lab-list" onPointerMove={move} onPointerLeave={() => setHover(null)}>
           {LAB.map((p, i) => (
@@ -235,7 +255,7 @@ function Archive({ onArchive }) {
   const { t } = useLang();
   return (
     <section id="archive" data-slide className="slide archive">
-      <div className="slide-inner">
+      <div className="slide-inner" data-depth>
         <Label n="07">{t.archive}</Label>
         <h2 className="archive-count rv" style={{ '--i': 1 }}><Count to={PROJECTS.length} /> <em>{t.projects}</em></h2>
         <p className="archive-sub rv" style={{ '--i': 2 }}>{t.archiveSub}</p>
@@ -255,7 +275,7 @@ function Contact() {
   const word = t.talk;
   return (
     <section id="contact" data-slide className="slide contact">
-      <div className="slide-inner">
+      <div className="slide-inner" data-depth>
         <Label n="08">{t.contact}</Label>
         <a className="contact-big" href={`mailto:${PROFILE.email}`} aria-label={`Email ${PROFILE.email}`}>
           {[...word].map((c, i) => <span key={word + i} style={{ '--i': i }}>{c === ' ' ? ' ' : c}</span>)}

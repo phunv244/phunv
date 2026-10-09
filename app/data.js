@@ -19,7 +19,7 @@ export const TIMELINE = [
   { label: 'Study', title: 'B.Sc. Information Technology', place: 'UTT · GPA 3.6 / 4.0', period: '2022 —', vi: { label: 'Học vấn', title: 'Cử nhân Công nghệ Thông tin' } },
 ];
 
-// Oldest first: the Experience helix climbs from the bottom milestone to the top one.
+// Oldest first: the Experience helix carries them up one by one as the page scrolls down.
 // metrics: [value, suffix, label]; counted up when the milestone comes into view
 export const EXPERIENCE = [
   {

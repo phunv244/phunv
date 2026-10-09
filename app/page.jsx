@@ -3,6 +3,8 @@ import { useEffect, useRef, useState } from 'react';
 import Light from './Light';
 import Gallery from './Gallery';
 import Sections from './Sections';
+import World from './World';
+import { startScroll, getLenis } from './scroll';
 import { PROFILE, UI } from './data';
 import { LangContext, Rich } from './lang';
 
@@ -49,19 +51,27 @@ export default function Home() {
     return () => clearInterval(id);
   }, []);
 
-  // Slide tracking: whichever slide crosses the viewport's center line is active; slides animate in once
+  useEffect(() => startScroll(), []);
+
+  // Slide tracking: whichever slide crosses the viewport's center line is active; slides animate in once,
+  // a little before that, while they are still rising out of the depth
   useEffect(() => {
     const slides = [...document.querySelectorAll('[data-slide]')];
     const io = new IntersectionObserver((entries) => {
-      for (const e of entries) {
-        if (!e.isIntersecting) continue;
-        e.target.classList.add('in');
-        setActive(slides.indexOf(e.target));
-      }
+      for (const e of entries) if (e.isIntersecting) setActive(slides.indexOf(e.target));
     }, { rootMargin: '-50% 0px -50% 0px' });
-    slides.forEach((el) => io.observe(el));
-    return () => io.disconnect();
+    const reveal = new IntersectionObserver((entries) => {
+      for (const e of entries) if (e.isIntersecting) e.target.classList.add('in');
+    }, { rootMargin: '0px 0px -30% 0px' });
+    slides.forEach((el) => { io.observe(el); reveal.observe(el); });
+    return () => { io.disconnect(); reveal.disconnect(); };
   }, []);
+
+  // The smooth scroller must stand still while the wall is open, or the wheel would scroll the locked page
+  useEffect(() => {
+    const lenis = getLenis();
+    if (archive) lenis?.stop(); else lenis?.start();
+  }, [archive]);
 
   useEffect(() => {
     if (!archive) return;
@@ -73,7 +83,9 @@ export default function Home() {
 
   // The draggable wall lives in the hero (perspective traps position: fixed), so jump there and lock scroll
   const openArchive = () => {
-    scrollTo({ top: 0, behavior: 'instant' });
+    const lenis = getLenis();
+    if (lenis) lenis.scrollTo(0, { immediate: true, force: true });
+    else scrollTo({ top: 0, behavior: 'instant' });
     setShot(true);
     setArchive(true);
   };
@@ -127,6 +139,8 @@ export default function Home() {
         <b>{String(active + 1).padStart(2, '0')}</b> / {String(SLIDES.length).padStart(2, '0')}
         <i style={{ '--p': active / (SLIDES.length - 1) }} />
       </div>
+
+      <World />
 
       <section id="top" className="hero" data-slide>
         <Light />
